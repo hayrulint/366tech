@@ -2,205 +2,376 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>366TECH FLEET — контроль выездных сотрудников и транспорта</title>
+<meta name="description" content="Платформа для диспетчеров и выездных сотрудников: карта транспорта в реальном времени, маршруты, фотоотчётность, геолокация без GPS-датчика.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  :root{
-    --carbon:#181925; --paper:#ffffff; --linen:#fafafa; --mist:#f5f5f5;
-    --fog:#e8e8e8; --ash:#999999; --graphite:#666666;
-    --lavender:#918df6; --iris:#9580ff;
-    --mint:#33c758; --mint-wash:#def6e4;
-    --amber:#ffa600; --sky:#2c78fc; --magenta:#d6409f; --ember:#ff3e00;
-    --sh-1: rgba(0,0,0,.08) 0 1px 1px 1px, rgba(0,0,0,.06) 0 0 0 .5px;
-    --sh-2: rgba(0,0,0,.08) 0 1px 1px 0, rgba(0,0,0,.05) 0 0 0 1px;
-    --sh-3: rgba(0,0,0,.06) 0 1px 3px 0, rgba(0,0,0,.06) 0 8px 16px 0, rgba(0,0,0,.02) 0 0 0 1px;
-  }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{margin:0; background:var(--paper); color:var(--carbon); font-family:'Inter',ui-sans-serif,sans-serif; -webkit-font-smoothing:antialiased;}
-  h1,h2,h3{margin:0; font-weight:600; letter-spacing:-0.02em;}
-  p{margin:0;}
-  a{color:inherit; text-decoration:none;}
-  .wrap{max-width:1200px; margin:0 auto; padding:0 24px;}
-  .eyebrow{font-size:13px; font-weight:500; color:var(--graphite); letter-spacing:-0.01em;}
+:root{
+  --bg:#08090d; --bg-1:#0d0f16; --panel:#11131c; --panel-2:#161927; --raised:#1b1e2d;
+  --line:rgba(255,255,255,.08); --line-soft:rgba(255,255,255,.05);
+  --text:#eef0f6; --text-dim:#a2a5b8; --text-mute:#666a80;
+  --violet:#8b5cf6; --violet-soft:#b9a3ff; --violet-deep:#5b3ce0;
+  --mint:#2fe0ac; --mint-deep:#159b78;
+  --amber:#f6ab3f; --red:#ff5c7a;
+  --glow-v:rgba(139,92,246,.4); --glow-m:rgba(47,224,172,.32);
+  --radius-s:10px; --radius-m:16px; --radius-l:26px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:'Inter',ui-sans-serif,sans-serif; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+h1,h2,h3{margin:0; font-family:'Space Grotesk',sans-serif; font-weight:600; letter-spacing:-0.01em; color:#fff;}
+p{margin:0}
+a{color:inherit; text-decoration:none}
+ul{margin:0; padding:0; list-style:none}
+button{font-family:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--violet-soft); outline-offset:3px; border-radius:4px}
+::selection{background:var(--violet); color:#fff}
+img{max-width:100%; display:block}
 
-  /* buttons */
-  .btn{display:inline-flex; align-items:center; gap:8px; border-radius:9999px; font-weight:500; font-size:14px; letter-spacing:-0.01em; cursor:pointer; border:none; white-space:nowrap;}
-  .btn-primary{background:var(--lavender); color:#fff; padding:12px 24px; box-shadow:var(--sh-1); transition:filter .15s ease, transform .15s ease;}
-  .btn-primary:hover{filter:brightness(1.06); transform:translateY(-1px);}
-  .btn-ghost{background:transparent; color:var(--graphite); padding:12px 24px; transition:color .15s ease, background .15s ease;}
-  .btn-ghost:hover{color:var(--carbon); background:var(--mist);}
-  .btn-dark{background:var(--carbon); color:#fff; padding:12px 24px; box-shadow:var(--sh-1); transition:filter .15s ease;}
-  .btn-dark:hover{filter:brightness(1.15);}
-  .link{font-weight:500; font-size:14px; padding:0 4px; border-bottom:1px solid transparent; transition:border-color .15s ease;}
-  .link:hover{border-color:var(--carbon);}
+.wrap{max-width:1180px; margin:0 auto; padding:0 24px}
+.eyebrow{font-size:13px; font-weight:500; color:var(--mint); display:flex; align-items:center; gap:8px}
+.eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 10px var(--mint); flex-shrink:0}
 
-  /* surfaces */
-  .card{background:var(--paper); border:1px solid var(--fog); border-radius:16px;}
-  .card-pad{padding:32px;}
-  .chip{display:inline-flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--fog); border-radius:9999px; padding:6px 14px; font-size:14px; font-weight:500; box-shadow:var(--sh-2);}
-  .table-wrap{background:#fff; border:1px solid var(--fog); border-radius:24px; overflow:hidden;}
-  table{width:100%; border-collapse:collapse;}
-  th{text-align:left; font-size:12px; font-weight:500; color:var(--ash); padding:16px 20px; letter-spacing:-0.01em;}
-  td{padding:16px 20px; font-size:14px; color:var(--graphite); border-top:1px solid var(--fog);}
-  td:first-child{color:var(--carbon); font-weight:500;}
+/* ---------- animated background layer ---------- */
+.aurora{
+  position:fixed; inset:0; z-index:-2; pointer-events:none; overflow:hidden;
+  background:var(--bg);
+}
+.aurora .blob{
+  position:absolute; border-radius:50%; filter:blur(60px); opacity:.55; will-change:transform;
+}
+.aurora .b1{ width:640px; height:640px; top:-220px; left:-160px; background:radial-gradient(circle,var(--glow-v),transparent 70%); animation:hue1 22s ease-in-out infinite; }
+.aurora .b2{ width:560px; height:560px; top:120px; right:-200px; background:radial-gradient(circle,var(--glow-m),transparent 70%); animation:hue2 26s ease-in-out infinite; }
+.aurora .b3{ width:480px; height:480px; bottom:-260px; left:30%; background:radial-gradient(circle,rgba(255,92,122,.22),transparent 70%); animation:hue3 30s ease-in-out infinite; }
+@keyframes hue1{ 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(60px,80px) scale(1.15)} }
+@keyframes hue2{ 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-70px,50px) scale(1.1)} }
+@keyframes hue3{ 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,-40px) scale(1.2)} }
+@media (prefers-reduced-motion:reduce){ .aurora .blob{animation:none} }
 
-  .grad-band{background:linear-gradient(115deg,#bed5fe 0%, #ebf2ff 45%, var(--lavender) 100%); padding:64px 0;}
-  .icon-circle{width:40px; height:40px; border-radius:50%; background:var(--lavender); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; font-weight:600;}
+/* ---------- header ---------- */
+header{position:fixed; top:0; left:0; right:0; z-index:100; padding:16px 0}
+.header-inner{
+  max-width:1180px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
+  background:rgba(13,15,22,.72); border:1px solid var(--line); border-radius:9999px; backdrop-filter:blur(16px);
+}
+.brand{display:flex; align-items:center; gap:10px}
+.brand .mark{
+  width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--violet),var(--mint));
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; color:#0a0a0f; font-family:'Space Grotesk',sans-serif;
+}
+.brand .name{font-weight:600; font-size:15px; letter-spacing:-0.01em}
+.brand .name span{color:var(--text-dim); font-weight:500}
 
-  .nav-pill{background:#fff; border:1px solid var(--fog); border-radius:9999px; box-shadow:var(--sh-2); padding:8px 8px 8px 20px;}
+.nav-links{display:flex; align-items:center; gap:26px}
+.nav-links a{font-size:14px; color:var(--text-dim); transition:color .15s ease; padding:4px 0}
+.nav-links a:hover{color:#fff}
 
-  .metric{background:#fff; border:1px solid var(--fog); border-radius:16px; padding:14px 16px;}
-  .metric .label{font-size:12px; color:var(--ash);}
-  .metric .value{font-size:24px; font-weight:600; color:var(--carbon); letter-spacing:-0.02em; margin-top:4px;}
-  .delta-pos{color:var(--mint); font-size:12px; font-weight:500; background:var(--mint-wash); border-radius:9999px; padding:2px 8px; display:inline-block; margin-top:6px;}
-  .delta-warn{color:var(--amber); font-size:12px; font-weight:500; background:#fff6e0; border-radius:9999px; padding:2px 8px; display:inline-block; margin-top:6px;}
+.header-actions{display:flex; align-items:center; gap:10px}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:9999px; font-weight:500; font-size:14px; cursor:pointer; border:none; white-space:nowrap; padding:11px 22px; transition:filter .15s ease, transform .15s ease, background .15s ease, border-color .15s ease}
+.btn-primary{background:linear-gradient(135deg,var(--violet),#6d3ff0); color:#fff; box-shadow:0 8px 24px -8px var(--glow-v)}
+.btn-primary:hover{filter:brightness(1.1); transform:translateY(-1px)}
+.btn-ghost{background:transparent; color:var(--text-dim); border:1px solid var(--line)}
+.btn-ghost:hover{color:#fff; border-color:rgba(255,255,255,.2)}
+.btn-outline{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.18)}
+.btn-outline:hover{background:rgba(255,255,255,.06)}
+.btn-mint{background:var(--mint); color:#08281f}
+.btn-mint:hover{filter:brightness(1.08)}
+.btn-sm{padding:9px 16px; font-size:13px}
+.btn-block{width:100%}
 
-  section{padding:80px 0;}
-  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:32px;}
-  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;}
-  @media (max-width:860px){ .grid3{grid-template-columns:1fr;} .grid2{grid-template-columns:1fr;} .nav-links{display:none;} }
+.burger{display:none; width:40px; height:40px; align-items:center; justify-content:center; background:transparent; border:1px solid var(--line); border-radius:50%; flex-direction:column; gap:4px}
+.burger span{display:block; width:16px; height:1.5px; background:#fff; transition:transform .25s ease, opacity .25s ease}
+.burger.open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+.burger.open span:nth-child(2){opacity:0}
+.burger.open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
 
-  .dot{width:8px; height:8px; border-radius:50%; display:inline-block;}
-  .status-row{display:flex; align-items:center; justify-content:space-between; font-size:13px; padding:10px 0; border-top:1px solid var(--fog);}
-  .status-row:first-of-type{border-top:none;}
+.mobile-drawer{
+  max-width:1180px; margin:8px auto 0; padding:0 16px;
+  max-height:0; overflow:hidden; transition:max-height .35s ease;
+}
+.mobile-drawer.open{max-height:420px}
+.mobile-drawer-inner{background:rgba(13,15,22,.94); border:1px solid var(--line); border-radius:20px; backdrop-filter:blur(16px); padding:10px}
+.mobile-drawer a{display:block; padding:13px 16px; font-size:15px; color:var(--text-dim); border-radius:12px}
+.mobile-drawer a:active{background:rgba(255,255,255,.05)}
 
-  footer{border-top:1px solid var(--fog); padding:56px 0 32px;}
-  .foot-grid{display:grid; grid-template-columns:2fr repeat(3,1fr); gap:32px;}
-  @media (max-width:860px){ .foot-grid{grid-template-columns:1fr 1fr;} }
-  .foot-grid a{display:block; font-size:14px; color:var(--graphite); padding:6px 0;}
-  .foot-grid a:hover{color:var(--carbon);}
-  .foot-head{font-size:12px; color:var(--ash); margin-bottom:8px;}
+@media (max-width:900px){
+  .nav-links{display:none}
+  .header-desktop-cta{display:none}
+  .burger{display:flex}
+}
+@media (min-width:901px){ .mobile-drawer{display:none} }
 
-  ::selection{background:var(--lavender); color:#fff;}
+/* ---------- hero ---------- */
+.hero{position:relative; padding:168px 0 90px; text-align:center}
+.hero .chip{
+  display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.04); border:1px solid var(--line);
+  border-radius:9999px; padding:7px 16px 7px 8px; font-size:13px; color:var(--text-dim);
+}
+.hero .chip .tag{background:linear-gradient(135deg,var(--violet),var(--mint)); color:#08090d; font-weight:600; font-size:11px; border-radius:9999px; padding:4px 10px}
+.hero h1{font-size:clamp(34px,6vw,66px); line-height:1.06; letter-spacing:-0.02em; max-width:820px; margin:30px auto 0}
+.hero h1 em{font-style:normal; color:transparent; background:linear-gradient(120deg,var(--violet-soft),var(--mint)); -webkit-background-clip:text; background-clip:text}
+.hero p.lead{font-size:18px; color:var(--text-dim); max-width:560px; margin:22px auto 0; line-height:1.6}
+.hero .cta-row{display:flex; gap:14px; justify-content:center; margin-top:36px; flex-wrap:wrap}
+
+.stat-strip{display:flex; justify-content:center; gap:48px; margin-top:64px; flex-wrap:wrap}
+.stat-strip .stat{text-align:center}
+.stat-strip .stat .num{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:600; color:#fff}
+.stat-strip .stat .lbl{font-size:13px; color:var(--text-mute); margin-top:4px}
+
+/* ---------- generic section ---------- */
+section{padding:100px 0; position:relative}
+.section-head{max-width:600px; margin-bottom:48px}
+.section-head h2{font-size:clamp(26px,3.4vw,38px); margin-top:10px; line-height:1.2}
+.section-head p{color:var(--text-dim); margin-top:14px; line-height:1.6; font-size:15px}
+.center{text-align:center; margin-left:auto; margin-right:auto}
+
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:26px}
+.grid2{display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:center}
+@media (max-width:860px){ .grid3{grid-template-columns:1fr} .grid2{grid-template-columns:1fr; gap:40px} }
+
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-l)}
+.panel-pad{padding:30px}
+.card-sm{background:var(--panel-2); border:1px solid var(--line-soft); border-radius:var(--radius-m); padding:24px}
+
+/* three-step intro */
+.step-num{width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color:#08090d; flex-shrink:0}
+
+/* table */
+.table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-l); overflow:hidden}
+table{width:100%; border-collapse:collapse}
+th{text-align:left; font-size:12px; font-weight:500; color:var(--text-mute); padding:16px 22px; border-bottom:1px solid var(--line)}
+td{padding:15px 22px; font-size:14px; color:var(--text-dim); border-top:1px solid var(--line-soft)}
+tr:first-child td{border-top:none}
+td:first-child{color:#fff; font-weight:500}
+.pill-tag{font-size:12px; padding:3px 10px; border-radius:9999px; display:inline-block}
+.pill-mint{background:rgba(47,224,172,.12); color:var(--mint)}
+.pill-violet{background:rgba(139,92,246,.15); color:var(--violet-soft)}
+
+/* dispatcher / map */
+.map-shell{display:grid; grid-template-columns:1.5fr 1fr; border:1px solid var(--line); border-radius:var(--radius-l); overflow:hidden; background:var(--panel)}
+@media (max-width:900px){ .map-shell{grid-template-columns:1fr} }
+.map-top{display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid var(--line); grid-column:1/-1}
+.live-dot{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--mint)}
+.live-dot .d{width:7px; height:7px; border-radius:50%; background:var(--mint); box-shadow:0 0 8px var(--mint); animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:.35}}
+#fleet-map{height:420px; width:100%; background:#0c0e14}
+.map-side{padding:18px; display:flex; flex-direction:column; gap:6px; max-height:420px; overflow:auto}
+.veh-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 12px; border-radius:12px; cursor:pointer; transition:background .15s ease}
+.veh-row:hover, .veh-row.active{background:rgba(255,255,255,.05)}
+.veh-row .info{display:flex; align-items:center; gap:10px; min-width:0}
+.veh-row .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0}
+.veh-row .txt{min-width:0}
+.veh-row .plate{font-size:13px; font-weight:500; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.veh-row .driver{font-size:12px; color:var(--text-mute)}
+.veh-row .status{font-size:12px; white-space:nowrap; flex-shrink:0}
+.legend{display:flex; gap:16px; padding:14px 22px; border-top:1px solid var(--line); font-size:12px; color:var(--text-mute); flex-wrap:wrap; grid-column:1/-1}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend i{width:8px; height:8px; border-radius:50%; display:inline-block}
+
+/* leaflet popup skin */
+.leaflet-popup-content-wrapper{background:#161927; color:#eef0f6; border-radius:14px; border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 40px -12px rgba(0,0,0,.6)}
+.leaflet-popup-tip{background:#161927}
+.leaflet-popup-content{margin:14px 16px; font-family:'Inter',sans-serif}
+.pop-title{font-weight:600; font-size:14px; color:#fff; margin-bottom:8px}
+.pop-row{display:flex; justify-content:space-between; gap:14px; font-size:12.5px; padding:4px 0; color:#a2a5b8}
+.pop-row b{color:#eef0f6; font-weight:500}
+.leaflet-control-attribution{background:rgba(10,11,16,.7) !important; color:#666a80 !important; border-radius:8px 0 0 0}
+.leaflet-control-attribution a{color:#9297ac !important}
+.leaflet-control-zoom a{background:#161927 !important; color:#eef0f6 !important; border-color:var(--line) !important}
+
+.marker-dot{border-radius:50%; display:block; box-shadow:0 0 0 5px rgba(0,0,0,0)}
+.marker-moving{background:var(--mint); box-shadow:0 0 0 6px rgba(47,224,172,.22)}
+.marker-idle{background:var(--amber); box-shadow:0 0 0 6px rgba(246,171,63,.2)}
+.marker-offline{background:#5a5f73; box-shadow:0 0 0 6px rgba(90,95,115,.16)}
+.marker-ping{position:absolute; inset:-6px; border-radius:50%; border:2px solid var(--mint); animation:ping 1.8s ease-out infinite}
+@keyframes ping{0%{transform:scale(.5); opacity:.9} 100%{transform:scale(1.8); opacity:0}}
+@media (prefers-reduced-motion:reduce){ .marker-ping,.live-dot .d{animation:none} }
+
+/* alert card */
+.alert-card{overflow:hidden}
+.alert-head{display:flex; align-items:center; gap:12px; padding:22px 24px; border-bottom:1px solid var(--line)}
+.alert-icon{width:36px; height:36px; border-radius:50%; background:rgba(246,171,63,.15); color:var(--amber); display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0}
+.alert-body{padding:20px 24px}
+.alert-row{display:flex; justify-content:space-between; font-size:13.5px; padding:9px 0; border-top:1px solid var(--line-soft)}
+.alert-row:first-child{border-top:none}
+.alert-row span:first-child{color:var(--text-mute)}
+.alert-foot{display:flex; justify-content:space-between; padding:14px 24px; border-top:1px solid var(--line); font-size:13px}
+
+/* industries */
+.ind-card{background:var(--panel-2); border:1px solid var(--line-soft); border-radius:var(--radius-m); padding:26px; transition:border-color .15s ease, transform .15s ease}
+.ind-card:hover{border-color:rgba(139,92,246,.4); transform:translateY(-2px)}
+.ind-card h3{font-size:16.5px; margin-bottom:8px}
+.ind-card p{color:var(--text-dim); font-size:14px; line-height:1.55}
+
+/* employee app mock */
+.phone-mock{max-width:300px; margin:0 auto; padding:22px; border-radius:28px; background:var(--panel); border:1px solid var(--line)}
+.photo-slot{flex:1; height:70px; border:1px dashed var(--line); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-mute)}
+
+/* contact */
+.contact-panel{padding:46px; display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center}
+@media (max-width:860px){ .contact-panel{grid-template-columns:1fr; padding:30px} }
+.field{background:var(--panel-2); border:1px solid var(--line); border-radius:9999px; padding:13px 20px; font-size:14px; font-family:inherit; color:#fff; width:100%}
+.field::placeholder{color:var(--text-mute)}
+.field:focus{outline:none; border-color:var(--violet)}
+
+footer{border-top:1px solid var(--line); padding:60px 0 34px}
+.foot-grid{display:grid; grid-template-columns:2fr repeat(3,1fr); gap:32px}
+@media (max-width:860px){ .foot-grid{grid-template-columns:1fr 1fr} }
+.foot-head{font-size:12px; color:var(--text-mute); margin-bottom:10px}
+.foot-grid a{display:block; font-size:14px; color:var(--text-dim); padding:6px 0}
+.foot-grid a:hover{color:#fff}
+
+/* ---------- modal ---------- */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(4,5,8,.75); backdrop-filter:blur(4px); z-index:200;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  opacity:0; visibility:hidden; transition:opacity .2s ease; overflow-y:auto;
+}
+.modal-overlay.open{opacity:1; visibility:visible}
+.modal-box{
+  background:var(--panel); border:1px solid var(--line); border-radius:24px; max-width:420px; width:100%;
+  padding:28px; position:relative; margin:auto; transform:translateY(8px); transition:transform .2s ease;
+}
+.modal-overlay.open .modal-box{transform:translateY(0)}
+.modal-box.wide{max-width:460px}
+.modal-close{position:absolute; top:18px; right:18px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line); background:transparent; color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:16px}
+.modal-close:hover{color:#fff}
+.tabs{display:flex; gap:6px; background:var(--panel-2); border-radius:9999px; padding:4px; margin-bottom:22px}
+.tab-btn{flex:1; padding:9px 0; border-radius:9999px; border:none; background:transparent; color:var(--text-dim); font-size:13.5px; font-weight:500}
+.tab-btn.active{background:linear-gradient(135deg,var(--violet),#6d3ff0); color:#fff}
+.field-label{font-size:12.5px; color:var(--text-mute); margin-bottom:6px; display:block}
+.field-group{margin-bottom:14px}
+
+/* driver cabinet */
+.task-box{background:var(--panel-2); border:1px solid var(--line-soft); border-radius:16px; padding:16px; margin-bottom:16px}
+.task-box .t1{font-size:13px; font-weight:500; color:#fff}
+.task-box .t2{font-size:12px; color:var(--text-mute); margin-top:4px}
+.photo-pair{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.photo-box{border:1px dashed var(--line); border-radius:16px; padding:12px; text-align:center; cursor:pointer; transition:border-color .15s ease}
+.photo-box:hover{border-color:var(--violet-soft)}
+.photo-box .ph-label{font-size:12px; color:var(--text-dim); font-weight:500; margin-bottom:8px}
+.photo-box img{border-radius:10px; width:100%; height:90px; object-fit:cover; margin-bottom:8px}
+.photo-box .ph-placeholder{height:90px; display:flex; align-items:center; justify-content:center; color:var(--text-mute); font-size:22px; border-radius:10px; background:rgba(255,255,255,.02); margin-bottom:8px}
+.photo-box .meta{font-size:10.5px; color:var(--text-mute); line-height:1.5; text-align:left}
+.photo-box .meta b{color:var(--mint); font-weight:500}
 </style>
 </head>
 <body>
 
+<div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
 <!-- Header -->
-<div class="wrap" style="padding-top:20px;">
-  <div style="display:flex; align-items:center; justify-content:space-between;">
-    <a href="#top" style="display:flex; align-items:center; gap:10px;">
-      <div style="width:32px;height:32px;border-radius:8px;background:var(--carbon);color:var(--lavender);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;">366</div>
-      <span style="font-weight:600; font-size:15px; letter-spacing:-0.01em;">TECH FLEET</span>
+<header>
+  <div class="header-inner">
+    <a href="#top" class="brand">
+      <span class="mark">366</span>
+      <span class="name">TECH FLEET</span>
     </a>
-    <nav class="nav-pill nav-links" style="display:flex; align-items:center; gap:4px;">
-      <a class="link" href="#platform">Платформа</a>
-      <a class="link" href="#modes">GPS-режимы</a>
-      <a class="link" href="#app">Приложение</a>
-      <a class="link" href="#control">Диспетчерская</a>
-      <a class="link" href="#industries">Отрасли</a>
-      <a class="btn btn-primary" href="#contact" style="margin-left:8px; padding:10px 20px;">Запросить демо</a>
+    <nav class="nav-links">
+      <a href="#platform">Платформа</a>
+      <a href="#modes">GPS-режимы</a>
+      <a href="#app">Приложение</a>
+      <a href="#control">Диспетчерская</a>
+      <a href="#industries">Отрасли</a>
     </nav>
-    <a class="btn btn-dark" href="#contact" style="display:none;" id="mobile-cta">Демо</a>
+    <div class="header-actions">
+      <a class="btn btn-primary btn-sm header-desktop-cta" href="#contact">Запросить демо</a>
+      <button class="btn btn-outline btn-sm" id="login-btn" type="button">Войти</button>
+      <button class="burger" id="burger-btn" type="button" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
-</div>
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="mobile-drawer-inner">
+      <a href="#platform">Платформа</a>
+      <a href="#modes">GPS-режимы</a>
+      <a href="#app">Приложение</a>
+      <a href="#control">Диспетчерская</a>
+      <a href="#industries">Отрасли</a>
+      <a href="#contact" style="color:var(--violet-soft); font-weight:600;">Запросить демо</a>
+    </div>
+  </div>
+</header>
 
 <!-- Hero -->
 <div id="top"></div>
-<section style="padding-top:72px; padding-bottom:0;">
-  <div class="wrap" style="text-align:center;">
+<section class="hero">
+  <div class="wrap">
     <a class="chip" href="#modes">
-      <span style="color:var(--sky); font-weight:600;">НОВОЕ</span>
+      <span class="tag">Новое</span>
       <span>GPS-мониторинг без физического датчика</span>
     </a>
-    <h1 style="font-size:60px; line-height:1.08; letter-spacing:-0.03em; margin-top:28px; max-width:760px; margin-left:auto; margin-right:auto;">
-      Работа в поле. Под контролем.
-    </h1>
-    <p style="font-size:18px; color:var(--graphite); max-width:560px; margin:20px auto 0; line-height:1.5;">
-      Маршруты, задания, фотоотчётность и геолокация — в одной системе для диспетчера
-      и выездного сотрудника. Источник координат — GPS-датчик или просто телефон.
-    </p>
-    <div style="display:flex; gap:12px; justify-content:center; margin-top:32px;">
+    <h1>Работа в поле.<br><em>Под полным контролем.</em></h1>
+    <p class="lead">Маршруты, задания, фотоотчётность и геолокация — в одной системе для диспетчера
+      и выездного сотрудника. Источник координат — GPS-датчик или просто телефон.</p>
+    <div class="cta-row">
       <a class="btn btn-primary" href="#contact">Запросить демо</a>
-      <a class="btn btn-ghost" href="#platform">Смотреть платформу</a>
+      <a class="btn btn-ghost" href="https://366fleet-demo.vercel.app" target="_blank" rel="noopener">Смотреть платформу</a>
     </div>
-  </div>
-</section>
-
-<!-- Gradient band with dashboard mockup -->
-<section id="platform" class="grad-band" style="margin-top:48px;">
-  <div class="wrap">
-    <div class="card" style="box-shadow:var(--sh-3); overflow:hidden;">
-      <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid var(--fog);">
-        <span class="eyebrow">366TECH FLEET · Карта</span>
-        <span style="font-size:13px; color:var(--mint); display:flex; align-items:center; gap:6px;">
-          <span class="dot" style="background:var(--mint);"></span>Система онлайн
-        </span>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--fog);">
-        <div style="background:#fff; padding:20px;"><div class="foot-head">Всего ТС</div><div style="font-size:28px; font-weight:600;">48</div></div>
-        <div style="background:#fff; padding:20px;"><div class="foot-head">На линии</div><div style="font-size:28px; font-weight:600;">42</div></div>
-        <div style="background:#fff; padding:20px;"><div class="foot-head">В движении</div><div style="font-size:28px; font-weight:600;">31</div></div>
-        <div style="background:#fff; padding:20px;"><div class="foot-head">Стоят</div><div style="font-size:28px; font-weight:600; color:var(--amber);">4</div></div>
-        <div style="background:#fff; padding:20px;"><div class="foot-head">Оффлайн</div><div style="font-size:28px; font-weight:600; color:var(--ash);">2</div></div>
-      </div>
-      <div style="display:grid; grid-template-columns:1.4fr 1fr;">
-        <div style="position:relative; min-height:280px; background:
-            linear-gradient(#f0f0f0 1px, transparent 1px) 0 0/40px 40px,
-            linear-gradient(90deg, #f0f0f0 1px, transparent 1px) 0 0/40px 40px, #fbfbfb;
-            border-right:1px solid var(--fog);">
-          <div style="position:absolute; top:30%; left:22%; width:12px; height:12px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 6px var(--mint-wash);"></div>
-          <div style="position:absolute; top:52%; left:55%; width:12px; height:12px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 6px var(--mint-wash);"></div>
-          <div style="position:absolute; top:68%; left:38%; width:12px; height:12px; border-radius:50%; background:var(--amber); box-shadow:0 0 0 6px #fff6e0;"></div>
-          <div style="position:absolute; bottom:14px; left:16px; font-size:12px; color:var(--ash);">Алматы · координаты с GPS-датчиков и приложений</div>
-        </div>
-        <div style="padding:16px 20px;">
-          <div class="foot-head" style="margin-bottom:6px;">Транспорт</div>
-          <div class="status-row"><span>702 AB 02 · Арман К.</span><span style="color:var(--mint);">54 км/ч</span></div>
-          <div class="status-row"><span>118 AC 02 · Данияр С.</span><span style="color:var(--mint);">Выполняет рейс</span></div>
-          <div class="status-row"><span>366 BX 02 · Ерлан Т.</span><span style="color:var(--amber);">Стоит 24 мин</span></div>
-          <div class="status-row"><span>910 KM 02 · Марат Ж.</span><span style="color:var(--ash);">Оффлайн</span></div>
-        </div>
-      </div>
+    <div class="stat-strip">
+      <div class="stat"><div class="num">48</div><div class="lbl">машин на связи</div></div>
+      <div class="stat"><div class="num">1 284</div><div class="lbl">рейсов в этом месяце</div></div>
+      <div class="stat"><div class="num">18 мин</div><div class="lbl">среднее время простоя</div></div>
+      <div class="stat"><div class="num">99.4%</div><div class="lbl">аптайм платформы</div></div>
     </div>
   </div>
 </section>
 
 <!-- Feature intro -->
-<section>
-  <div class="wrap grid3">
-    <div style="text-align:center;">
-      <div class="icon-circle" style="margin:0 auto 16px;">01</div>
-      <h3 style="font-size:18px;">GPS-датчик на транспорт</h3>
-      <p style="color:var(--graphite); font-size:15px; margin-top:8px; line-height:1.5;">Классический мониторинг: маршрут, стоянки, пробег.</p>
+<section id="platform">
+  <div class="wrap">
+    <div class="section-head center">
+      <div class="eyebrow" style="justify-content:center">Один бэкенд, два источника координат</div>
+      <h2>Диспетчеру не важно, откуда пришли данные</h2>
     </div>
-    <div style="text-align:center;">
-      <div class="icon-circle" style="margin:0 auto 16px; background:var(--iris);">02</div>
-      <h3 style="font-size:18px;">Телефон сотрудника</h3>
-      <p style="color:var(--graphite); font-size:15px; margin-top:8px; line-height:1.5;">Датчик не нужен — приложение само передаёт координаты.</p>
-    </div>
-    <div style="text-align:center;">
-      <div class="icon-circle" style="margin:0 auto 16px; background:var(--magenta);">03</div>
-      <h3 style="font-size:18px;">Единая панель</h3>
-      <p style="color:var(--graphite); font-size:15px; margin-top:8px; line-height:1.5;">Диспетчеру не важно, откуда пришли координаты.</p>
+    <div class="grid3">
+      <div class="card-sm">
+        <div class="step-num" style="background:var(--violet);">01</div>
+        <h3 style="font-size:17px; margin:16px 0 8px;">GPS-датчик на транспорт</h3>
+        <p style="color:var(--text-dim); font-size:14.5px; line-height:1.6;">Классический мониторинг: маршрут, стоянки, пробег, расход топлива.</p>
+      </div>
+      <div class="card-sm">
+        <div class="step-num" style="background:var(--mint);">02</div>
+        <h3 style="font-size:17px; margin:16px 0 8px;">Телефон сотрудника</h3>
+        <p style="color:var(--text-dim); font-size:14.5px; line-height:1.6;">Датчик не нужен — приложение само передаёт координаты в фоне.</p>
+      </div>
+      <div class="card-sm">
+        <div class="step-num" style="background:var(--red);">03</div>
+        <h3 style="font-size:17px; margin:16px 0 8px;">Единая панель</h3>
+        <p style="color:var(--text-dim); font-size:14.5px; line-height:1.6;">Обе схемы сходятся в одной карте и одной таблице событий.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- GPS modes comparison -->
-<section id="modes" style="background:var(--linen);">
+<section id="modes">
   <div class="wrap">
-    <div style="max-width:600px; margin-bottom:40px;">
-      <div class="eyebrow" style="margin-bottom:8px;">Один бэкенд · два источника координат</div>
-      <h2 style="font-size:36px;">GPS-датчик не обязателен</h2>
-      <p style="color:var(--graphite); margin-top:12px; line-height:1.6;">
-        Нужен полный контроль транспорта — ставим GPS-трекер. Установка нецелесообразна —
-        сотрудник просто скачивает приложение, и его смартфон становится источником геолокации.
-      </p>
+    <div class="section-head">
+      <div class="eyebrow">Гибкое подключение</div>
+      <h2>GPS-датчик не обязателен</h2>
+      <p>Нужен полный контроль транспорта — ставим GPS-трекер. Установка нецелесообразна —
+        сотрудник просто скачивает приложение, и его смартфон становится источником геолокации.</p>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Тип бизнеса</th><th>GPS-датчик</th><th>Приложение на телефоне</th></tr></thead>
         <tbody>
-          <tr><td>Автопарк</td><td>Рекомендуется</td><td>Можно</td></tr>
-          <tr><td>Курьеры</td><td>Не обязателен</td><td>Основной вариант</td></tr>
-          <tr><td>Вывоз отходов</td><td>Рекомендуется</td><td>Можно</td></tr>
-          <tr><td>Выездные сотрудники</td><td>Не обязателен</td><td>Основной вариант</td></tr>
-          <tr><td>Сервисные службы</td><td>Не обязателен</td><td>Основной вариант</td></tr>
-          <tr><td>Доставка</td><td>Не обязателен</td><td>Основной вариант</td></tr>
+          <tr><td>Автопарк</td><td><span class="pill-tag pill-violet">Рекомендуется</span></td><td><span class="pill-tag pill-mint">Можно</span></td></tr>
+          <tr><td>Курьеры</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
+          <tr><td>Вывоз отходов</td><td><span class="pill-tag pill-violet">Рекомендуется</span></td><td><span class="pill-tag pill-mint">Можно</span></td></tr>
+          <tr><td>Выездные сотрудники</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
+          <tr><td>Сервисные службы</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
+          <tr><td>Доставка</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -211,65 +382,69 @@
 <section id="app">
   <div class="wrap grid2">
     <div>
-      <div class="eyebrow" style="margin-bottom:8px;">Приложение сотрудника</div>
-      <h2 style="font-size:36px; margin-bottom:24px;">От задания до фотоотчёта — четыре шага</h2>
+      <div class="eyebrow">Приложение сотрудника</div>
+      <h2 style="margin-top:10px; margin-bottom:26px;">От задания до фотоотчёта — четыре шага</h2>
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div style="display:flex; gap:14px;">
-          <div class="icon-circle" style="width:28px;height:28px;font-size:12px;flex-shrink:0;">1</div>
-          <div><div style="font-weight:500;">Получает задание</div><div style="color:var(--graphite); font-size:14px; margin-top:2px;">Адрес, тип работы, временное окно.</div></div>
+          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">1</div>
+          <div><div style="font-weight:500; color:#fff;">Получает задание</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Адрес, тип работы, временное окно.</div></div>
         </div>
         <div style="display:flex; gap:14px;">
-          <div class="icon-circle" style="width:28px;height:28px;font-size:12px;flex-shrink:0;">2</div>
-          <div><div style="font-weight:500;">Едет по маршруту</div><div style="color:var(--graphite); font-size:14px; margin-top:2px;">Система фиксирует выезд, прибытие, время в пути.</div></div>
+          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">2</div>
+          <div><div style="font-weight:500; color:#fff;">Едет по маршруту</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Система фиксирует выезд, прибытие, время в пути.</div></div>
         </div>
         <div style="display:flex; gap:14px;">
-          <div class="icon-circle" style="width:28px;height:28px;font-size:12px;flex-shrink:0;">3</div>
-          <div><div style="font-weight:500;">Снимает фото до / после</div><div style="color:var(--graphite); font-size:14px; margin-top:2px;">Снимок привязан к координатам и времени.</div></div>
+          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">3</div>
+          <div><div style="font-weight:500; color:#fff;">Снимает фото до / после</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Снимок автоматически привязан к координатам и времени.</div></div>
         </div>
         <div style="display:flex; gap:14px;">
-          <div class="icon-circle" style="width:28px;height:28px;font-size:12px;flex-shrink:0;">4</div>
-          <div><div style="font-weight:500;">Завершает задание</div><div style="color:var(--graphite); font-size:14px; margin-top:2px;">Диспетчер сразу видит: где, когда, кто, что сделал.</div></div>
+          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">4</div>
+          <div><div style="font-weight:500; color:#fff;">Завершает задание</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Диспетчер сразу видит: где, когда, кто, что сделал.</div></div>
         </div>
       </div>
+      <button class="btn btn-outline" style="margin-top:26px;" type="button" onclick="openModal('driver')">Открыть кабинет водителя</button>
     </div>
-    <div class="card" style="box-shadow:var(--sh-3); padding:20px; max-width:320px; margin:0 auto;">
+    <div class="phone-mock">
       <div class="foot-head">Сегодня</div>
-      <div style="font-size:22px; font-weight:600; margin-top:4px;">6 заданий</div>
-      <span class="delta-pos">3 выполнено</span>
-      <div class="card" style="margin-top:18px; padding:14px;">
-        <div style="font-size:13px; font-weight:500;">Задание №1254</div>
-        <div style="font-size:12px; color:var(--ash); margin-top:4px;">Заказной вывоз · Медеуский р-н</div>
-        <div style="font-size:12px; color:var(--ash);">14:00–15:00</div>
+      <div style="font-size:21px; font-weight:600; color:#fff; margin-top:4px;">6 заданий</div>
+      <span class="pill-tag pill-mint" style="margin-top:8px; display:inline-block;">3 выполнено</span>
+      <div class="task-box" style="margin-top:16px;">
+        <div class="t1">Задание №1254</div>
+        <div class="t2">Заказной вывоз · Медеуский р-н · 14:00–15:00</div>
       </div>
-      <div style="background:var(--lavender); border-radius:16px; padding:14px; margin-top:12px;">
+      <div style="background:linear-gradient(135deg,var(--violet),#6d3ff0); border-radius:16px; padding:14px; margin-top:6px;">
         <div style="font-size:13px; font-weight:600; color:#fff;">Маршрут открыт</div>
         <div style="font-size:12px; color:#fff; opacity:.85; margin-top:2px;">3 точки · 6,4 км</div>
       </div>
       <div style="display:flex; gap:10px; margin-top:12px;">
-        <div style="flex:1; height:64px; border:1px dashed var(--fog); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--ash);">Фото до</div>
-        <div style="flex:1; height:64px; border:1px dashed var(--fog); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--ash);">Фото после</div>
+        <div class="photo-slot">Фото до</div>
+        <div class="photo-slot">Фото после</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Dispatcher control -->
-<section id="control" style="background:var(--linen);">
-  <div class="wrap grid2">
-    <div>
-      <div class="eyebrow" style="margin-bottom:8px;">Панель диспетчера</div>
-      <h2 style="font-size:36px; margin-bottom:16px;">Видеть всё. Реагировать сразу.</h2>
-      <p style="color:var(--graphite); line-height:1.6; max-width:440px; margin-bottom:28px;">
-        Карта, рейсы, события и отчётность — в одном рабочем пространстве. Система сама
-        подсвечивает, где проблема, — диспетчеру не нужно следить за 30 объектами вручную.
-      </p>
-      <a class="btn btn-primary" href="#contact">Открыть демо для диспетчера</a>
+<!-- Dispatcher control / MAP -->
+<section id="control">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Панель диспетчера</div>
+      <h2>Видеть всё. Реагировать сразу.</h2>
+      <p>Карта, рейсы, события и отчётность — в одном рабочем пространстве. Кликните по машине,
+        чтобы увидеть водителя, скорость, статус и адрес.</p>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-      <div class="metric"><div class="label">Общий пробег</div><div class="value">18 420 км</div><span class="delta-pos">↑ 8,4%</span></div>
-      <div class="metric"><div class="label">Выполнено рейсов</div><div class="value">1 284</div><span class="delta-pos">↑ 12,1%</span></div>
-      <div class="metric"><div class="label">Среднее время простоя</div><div class="value">18 мин</div><span class="delta-warn">↑ 2,3%</span></div>
-      <div class="metric"><div class="label">Требует внимания</div><div class="value">3 события</div><span class="delta-warn">сейчас</span></div>
+    <div class="map-shell">
+      <div class="map-top">
+        <span class="eyebrow" style="margin:0;">366TECH FLEET · Карта</span>
+        <span class="live-dot"><span class="d"></span>Система онлайн</span>
+      </div>
+      <div id="fleet-map"></div>
+      <div class="map-side" id="veh-list"></div>
+      <div class="legend">
+        <span><i style="background:var(--mint);"></i>В движении</span>
+        <span><i style="background:var(--amber);"></i>Стоит</span>
+        <span><i style="background:#5a5f73;"></i>Оффлайн</span>
+      </div>
     </div>
   </div>
 </section>
@@ -278,83 +453,77 @@
 <section>
   <div class="wrap grid2">
     <div>
-      <div class="eyebrow" style="margin-bottom:8px;">Модуль контроля остановок</div>
-      <h2 style="font-size:36px; margin-bottom:16px;">Система сама находит проблему</h2>
-      <p style="color:var(--graphite); line-height:1.6; margin-bottom:24px;">
+      <div class="eyebrow">Модуль контроля остановок</div>
+      <h2 style="margin-top:10px; margin-bottom:16px;">Система сама находит проблему</h2>
+      <p style="color:var(--text-dim); line-height:1.6; margin-bottom:24px; font-size:15px;">
         При отсутствии движения дольше заданного порога система создаёт событие и
-        отправляет push-уведомление диспетчеру. Пороги настраиваются в компании.
-      </p>
-      <div style="display:flex; flex-direction:column; gap:10px; font-size:14px;">
-        <div style="display:flex; align-items:center; gap:10px;"><span class="dot" style="background:var(--amber);"></span>20 минут — предупреждение</div>
-        <div style="display:flex; align-items:center; gap:10px;"><span class="dot" style="background:#f97316;"></span>30 минут — критическая остановка</div>
-        <div style="display:flex; align-items:center; gap:10px;"><span class="dot" style="background:var(--ember);"></span>60 минут — серьёзное нарушение</div>
+        отправляет push-уведомление диспетчеру. Пороги настраиваются в компании.</p>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--text-dim);">
+        <div style="display:flex; align-items:center; gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber); display:inline-block;"></span>20 минут — предупреждение</div>
+        <div style="display:flex; align-items:center; gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:#ff8a3d; display:inline-block;"></span>30 минут — критическая остановка</div>
+        <div style="display:flex; align-items:center; gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--red); display:inline-block;"></span>60 минут — серьёзное нарушение</div>
       </div>
-      <p style="color:var(--ash); font-size:13px; margin-top:20px; line-height:1.6;">
+      <p style="color:var(--text-mute); font-size:13px; margin-top:20px; line-height:1.6;">
         Остановка в геозоне назначенного объекта считается рабочим временем и не создаёт
-        нарушение — система различает «прибыл на объект» и «встал вне маршрута».
-      </p>
+        нарушение — система различает «прибыл на объект» и «встал вне маршрута».</p>
     </div>
-    <div class="card" style="box-shadow:var(--sh-3); overflow:hidden;">
-      <div style="padding:24px;">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-          <div style="width:36px; height:36px; border-radius:50%; background:#fff6e0; color:var(--amber); display:flex; align-items:center; justify-content:center; font-weight:600;">!</div>
-          <div>
-            <div style="font-weight:600;">Длительная остановка</div>
-            <div style="font-size:12px; color:var(--ash);">Обновлено сейчас</div>
-          </div>
-        </div>
-        <div style="font-size:14px;">
-          <div class="status-row"><span style="color:var(--ash);">Машина</span><span>№15 · 366 BX 02</span></div>
-          <div class="status-row"><span style="color:var(--ash);">Стоянка</span><span>28 минут</span></div>
-          <div class="status-row"><span style="color:var(--ash);">Адрес</span><span>ул. Ауэзова, 106</span></div>
-          <div class="status-row"><span style="color:var(--ash);">Задание</span><span>№1548</span></div>
-          <div class="status-row"><span style="color:var(--ash);">Статус</span><span style="color:#f97316;">Вне маршрута</span></div>
+    <div class="panel alert-card">
+      <div class="alert-head">
+        <div class="alert-icon">!</div>
+        <div>
+          <div style="font-weight:600; color:#fff;">Длительная остановка</div>
+          <div style="font-size:12px; color:var(--text-mute);">Обновлено сейчас</div>
         </div>
       </div>
-      <a href="#control" class="link" style="display:flex; justify-content:space-between; padding:16px 24px; border-top:1px solid var(--fog); font-size:13px;">
-        <span style="color:var(--ash);">Открыть на карте</span><span style="color:var(--lavender);">Перейти</span>
-      </a>
+      <div class="alert-body">
+        <div class="alert-row"><span>Машина</span><span style="color:#fff;">№15 · 366 BX 02</span></div>
+        <div class="alert-row"><span>Стоянка</span><span style="color:#fff;">28 минут</span></div>
+        <div class="alert-row"><span>Адрес</span><span style="color:#fff;">ул. Ауэзова, 106</span></div>
+        <div class="alert-row"><span>Задание</span><span style="color:#fff;">№1548</span></div>
+        <div class="alert-row"><span>Статус</span><span style="color:#ff8a3d;">Вне маршрута</span></div>
+      </div>
+      <a href="#control" class="alert-foot"><span style="color:var(--text-mute);">Открыть на карте</span><span style="color:var(--violet-soft);">Перейти →</span></a>
     </div>
   </div>
 </section>
 
 <!-- Industries -->
-<section id="industries" style="background:var(--linen);">
+<section id="industries">
   <div class="wrap">
-    <div style="max-width:560px; margin-bottom:40px;">
-      <div class="eyebrow" style="margin-bottom:8px;">Отраслевые решения</div>
-      <h2 style="font-size:36px;">Одна платформа. Любой развозной бизнес.</h2>
+    <div class="section-head">
+      <div class="eyebrow">Отраслевые решения</div>
+      <h2>Одна платформа. Любой развозной бизнес.</h2>
     </div>
     <div class="grid3" style="grid-template-columns:repeat(3,1fr);">
-      <div class="card card-pad"><h3 style="font-size:18px; margin-bottom:8px;">Вывоз отходов</h3><p style="color:var(--graphite); font-size:14px; line-height:1.6;">Постоянные маршруты по графику, контроль точек, фотофиксация.</p></div>
-      <div class="card card-pad"><h3 style="font-size:18px; margin-bottom:8px;">Доставка воды и продукции</h3><p style="color:var(--graphite); font-size:14px; line-height:1.6;">Рейсы, точное время прибытия, отчётность по заказу.</p></div>
-      <div class="card card-pad"><h3 style="font-size:18px; margin-bottom:8px;">Курьеры</h3><p style="color:var(--graphite); font-size:14px; line-height:1.6;">Работа без GPS-датчика — только приложение на телефоне.</p></div>
-      <div class="card card-pad"><h3 style="font-size:18px; margin-bottom:8px;">Выездные сотрудники</h3><p style="color:var(--graphite); font-size:14px; line-height:1.6;">Маршрут до объекта, подтверждение фото и геометкой.</p></div>
-      <div class="card card-pad"><h3 style="font-size:18px; margin-bottom:8px;">Сервисные службы</h3><p style="color:var(--graphite); font-size:14px; line-height:1.6;">Выезд специалиста, контроль времени, история визитов.</p></div>
-      <div class="card card-pad"><h3 style="font-size:18px; margin-bottom:8px;">Автопарк</h3><p style="color:var(--graphite); font-size:14px; line-height:1.6;">Классический GPS-мониторинг: маршрут, стоянки, пробег.</p></div>
+      <div class="ind-card"><h3>Вывоз отходов</h3><p>Постоянные маршруты по графику, контроль точек, фотофиксация.</p></div>
+      <div class="ind-card"><h3>Доставка воды и продукции</h3><p>Рейсы, точное время прибытия, отчётность по заказу.</p></div>
+      <div class="ind-card"><h3>Курьеры</h3><p>Работа без GPS-датчика — только приложение на телефоне.</p></div>
+      <div class="ind-card"><h3>Выездные сотрудники</h3><p>Маршрут до объекта, подтверждение фото и геометкой.</p></div>
+      <div class="ind-card"><h3>Сервисные службы</h3><p>Выезд специалиста, контроль времени, история визитов.</p></div>
+      <div class="ind-card"><h3>Автопарк</h3><p>Классический GPS-мониторинг: маршрут, стоянки, пробег.</p></div>
     </div>
   </div>
 </section>
 
 <!-- CTA / Contact -->
-<section id="contact" class="grad-band" style="padding:0;">
-  <div class="wrap" style="padding:64px 24px;">
-    <div class="card" style="box-shadow:var(--sh-3); padding:48px; display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center;">
+<section id="contact">
+  <div class="wrap">
+    <div class="panel contact-panel">
       <div>
-        <div class="eyebrow" style="margin-bottom:8px;">Готовы увидеть больше?</div>
-        <h2 style="font-size:32px; line-height:1.2; margin-bottom:20px;">Покажем платформу на данных вашего автопарка.</h2>
-        <div style="display:flex; flex-direction:column; gap:12px; font-size:14px; color:var(--graphite);">
-          <a class="link" style="border:none;" href="tel:+77789990203">📞 +7 (778) 999-02-03</a>
-          <a class="link" style="border:none;" href="mailto:366media@mail.ru">✉️ 366media@mail.ru</a>
+        <div class="eyebrow">Готовы увидеть больше?</div>
+        <h2 style="margin-top:10px; margin-bottom:20px; font-size:30px;">Покажем платформу на данных вашего автопарка.</h2>
+        <div style="display:flex; flex-direction:column; gap:12px; font-size:14px; color:var(--text-dim);">
+          <a href="tel:+77789990203">📞 +7 (778) 999-02-03</a>
+          <a href="mailto:366media@mail.ru">✉️ 366media@mail.ru</a>
           <span>📍 г. Алматы, Казахстан</span>
         </div>
-        <a href="https://wa.me/77789990203" target="_blank" class="btn btn-dark" style="margin-top:24px;">Написать в WhatsApp</a>
+        <a href="https://wa.me/77789990203" target="_blank" rel="noopener" class="btn btn-mint" style="margin-top:22px;">Написать в WhatsApp</a>
       </div>
       <form id="demo-form" style="display:flex; flex-direction:column; gap:14px;" onsubmit="event.preventDefault(); document.getElementById('form-status').textContent='Спасибо! Мы свяжемся с вами в ближайшее время.'; this.reset();">
-        <input type="text" required placeholder="Ваше имя" style="border:1px solid var(--fog); border-radius:9999px; padding:12px 18px; font-size:14px; font-family:inherit;">
-        <input type="tel" required placeholder="+7 (___) ___-__-__" style="border:1px solid var(--fog); border-radius:9999px; padding:12px 18px; font-size:14px; font-family:inherit;">
-        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Запросить демо</button>
-        <div id="form-status" style="font-size:13px; color:var(--mint); text-align:center;"></div>
+        <input class="field" type="text" required placeholder="Ваше имя">
+        <input class="field" type="tel" required placeholder="+7 (___) ___-__-__">
+        <button type="submit" class="btn btn-primary btn-block">Запросить демо</button>
+        <div id="form-status" style="font-size:13px; color:var(--mint); text-align:center; min-height:16px;"></div>
       </form>
     </div>
   </div>
@@ -365,14 +534,14 @@
   <div class="wrap foot-grid">
     <div>
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-        <div style="width:28px;height:28px;border-radius:7px;background:var(--carbon);color:var(--lavender);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;">366</div>
-        <span style="font-weight:600; font-size:14px;">TECH FLEET</span>
+        <span class="mark" style="width:28px;height:28px;font-size:10px;">366</span>
+        <span style="font-weight:600; font-size:14px; color:#fff;">TECH FLEET</span>
       </div>
-      <p style="color:var(--graphite); font-size:13px; max-width:220px; line-height:1.5;">Контроль выездных сотрудников и транспорта на одной платформе.</p>
+      <p style="color:var(--text-dim); font-size:13px; max-width:220px; line-height:1.5;">Контроль выездных сотрудников и транспорта на одной платформе.</p>
     </div>
     <div>
       <div class="foot-head">Платформа</div>
-      <a href="#platform">Диспетчерская</a><a href="#app">Приложение</a><a href="#modes">GPS-режимы</a>
+      <a href="#control">Диспетчерская</a><a href="#app">Приложение</a><a href="#modes">GPS-режимы</a>
     </div>
     <div>
       <div class="foot-head">Компания</div>
@@ -383,10 +552,201 @@
       <a href="tel:+77789990203">+7 (778) 999-02-03</a><a href="mailto:366media@mail.ru">366media@mail.ru</a>
     </div>
   </div>
-  <div class="wrap" style="margin-top:32px; padding-top:24px; border-top:1px solid var(--fog); font-size:13px; color:var(--ash);">
+  <div class="wrap" style="margin-top:32px; padding-top:24px; border-top:1px solid var(--line); font-size:13px; color:var(--text-mute);">
     © 2026 366TECH FLEET · Алматы, Казахстан
   </div>
 </footer>
 
+<!-- ===================== LOGIN MODAL ===================== -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box wide">
+    <button class="modal-close" type="button" onclick="closeModal()">✕</button>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-dispatcher" type="button" onclick="switchTab('dispatcher')">Диспетчер</button>
+      <button class="tab-btn" id="tab-driver" type="button" onclick="switchTab('driver')">Водитель</button>
+    </div>
+
+    <!-- Dispatcher login -->
+    <div id="pane-dispatcher">
+      <h3 style="font-size:19px; margin-bottom:6px;">Вход диспетчера</h3>
+      <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:20px;">Доступ к карте, рейсам и отчётности компании.</p>
+      <form onsubmit="event.preventDefault(); document.getElementById('dispatcher-status').textContent='Демо-режим: вход выполнен.';">
+        <div class="field-group"><label class="field-label">Email</label><input class="field" type="email" required placeholder="you@company.kz"></div>
+        <div class="field-group"><label class="field-label">Пароль</label><input class="field" type="password" required placeholder="••••••••"></div>
+        <button class="btn btn-primary btn-block" type="submit">Войти</button>
+        <div id="dispatcher-status" style="font-size:13px; color:var(--mint); text-align:center; margin-top:12px;"></div>
+      </form>
+    </div>
+
+    <!-- Driver cabinet -->
+    <div id="pane-driver" style="display:none;">
+      <h3 style="font-size:19px; margin-bottom:6px;">Кабинет водителя</h3>
+      <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:18px;">Текущее задание и фотоотчёт до / после.</p>
+      <div class="task-box">
+        <div class="t1">Задание №1548 · Ерлан Т.</div>
+        <div class="t2">ул. Ауэзова, 106 · Медеуский р-н · до 15:00</div>
+      </div>
+      <div class="photo-pair">
+        <div class="photo-box" id="box-before" onclick="document.getElementById('input-before').click()">
+          <div class="ph-label">Фото «До»</div>
+          <div class="ph-placeholder" id="placeholder-before">📷</div>
+          <div class="meta" id="meta-before">Нажмите, чтобы снять</div>
+        </div>
+        <div class="photo-box" id="box-after" onclick="document.getElementById('input-after').click()">
+          <div class="ph-label">Фото «После»</div>
+          <div class="ph-placeholder" id="placeholder-after">📷</div>
+          <div class="meta" id="meta-after">Нажмите, чтобы снять</div>
+        </div>
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="input-before" style="display:none;" onchange="capturePhoto(this,'before')">
+      <input type="file" accept="image/*" capture="environment" id="input-after" style="display:none;" onchange="capturePhoto(this,'after')">
+      <button class="btn btn-mint btn-block" style="margin-top:18px;" type="button" onclick="document.getElementById('driver-status').textContent='Задание отмечено выполненным.';">Завершить задание</button>
+      <div id="driver-status" style="font-size:13px; color:var(--mint); text-align:center; margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ---------------- header / mobile nav ---------------- */
+const burger = document.getElementById('burger-btn');
+const drawer = document.getElementById('mobile-drawer');
+burger.addEventListener('click', () => {
+  const open = drawer.classList.toggle('open');
+  burger.classList.toggle('open', open);
+  burger.setAttribute('aria-expanded', open);
+});
+drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  drawer.classList.remove('open'); burger.classList.remove('open'); burger.setAttribute('aria-expanded','false');
+}));
+
+/* ---------------- login modal ---------------- */
+const modal = document.getElementById('login-modal');
+document.getElementById('login-btn').addEventListener('click', () => openModal('dispatcher'));
+function openModal(tab){ modal.classList.add('open'); switchTab(tab || 'dispatcher'); document.body.style.overflow='hidden'; }
+function closeModal(){ modal.classList.remove('open'); document.body.style.overflow=''; }
+modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+function switchTab(tab){
+  const isDriver = tab === 'driver';
+  document.getElementById('tab-dispatcher').classList.toggle('active', !isDriver);
+  document.getElementById('tab-driver').classList.toggle('active', isDriver);
+  document.getElementById('pane-dispatcher').style.display = isDriver ? 'none' : 'block';
+  document.getElementById('pane-driver').style.display = isDriver ? 'block' : 'none';
+}
+
+/* ---------------- driver photo capture: geolocation + timestamp ---------------- */
+function capturePhoto(input, slot){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const placeholder = document.getElementById('placeholder-' + slot);
+  const meta = document.getElementById('meta-' + slot);
+  const reader = new FileReader();
+  reader.onload = e => {
+    placeholder.outerHTML = '<img id="placeholder-' + slot + '" src="' + e.target.result + '" alt="Фото ' + slot + '">';
+  };
+  reader.readAsDataURL(file);
+
+  const time = new Date().toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  meta.innerHTML = 'Снято: <b>' + time + '</b><br>Определяем геопозицию…';
+
+  if(!navigator.geolocation){
+    meta.innerHTML = 'Снято: <b>' + time + '</b><br>Геопозиция недоступна в браузере';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(5);
+      const lon = pos.coords.longitude.toFixed(5);
+      meta.innerHTML = 'Снято: <b>' + time + '</b><br>Гео: <b>' + lat + ', ' + lon + '</b>';
+    },
+    () => { meta.innerHTML = 'Снято: <b>' + time + '</b><br>Гео: доступ не разрешён'; },
+    { enableHighAccuracy:true, timeout:8000 }
+  );
+}
+
+/* ---------------- parallax on scroll ---------------- */
+const blobs = document.querySelectorAll('.aurora .blob');
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if(ticking) return; ticking = true;
+  requestAnimationFrame(() => {
+    const y = window.scrollY;
+    blobs[0] && (blobs[0].style.transform = 'translate3d(0,' + (y*0.06) + 'px,0)');
+    blobs[1] && (blobs[1].style.transform = 'translate3d(0,' + (y*-0.05) + 'px,0)');
+    blobs[2] && (blobs[2].style.transform = 'translate3d(0,' + (y*0.04) + 'px,0)');
+    ticking = false;
+  });
+}, { passive:true });
+
+/* ---------------- fleet map ---------------- */
+const vehicles = [
+  { plate:'702 AB 02', driver:'Арман К.',  lat:43.2405, lng:76.9285, status:'moving',  speed:'54 км/ч', task:'№1601', addr:'пр. Абая, возле Алма-Ата' },
+  { plate:'118 AC 02', driver:'Данияр С.', lat:43.2555, lng:76.9455, status:'moving',  speed:'38 км/ч', task:'№1598', addr:'ул. Толе би / Достык' },
+  { plate:'366 BX 02', driver:'Ерлан Т.',  lat:43.2465, lng:76.9105, status:'idle',    speed:'0 км/ч',  task:'№1548', addr:'ул. Ауэзова, 106' },
+  { plate:'910 KM 02', driver:'Марат Ж.',  lat:43.2210, lng:76.9060, status:'offline', speed:'—',       task:'—',     addr:'Каныша Сатпаева, депо' },
+  { plate:'204 EA 02', driver:'Асель Н.',  lat:43.2620, lng:76.9330, status:'moving',  speed:'46 км/ч', task:'№1612', addr:'Жибек Жолы / Зенкова' },
+  { plate:'557 KZ 02', driver:'Бекзат О.', lat:43.2325, lng:76.9520, status:'idle',    speed:'0 км/ч',  task:'№1605', addr:'пр. Аль-Фараби' },
+];
+
+const statusMeta = {
+  moving:  { color:'#2fe0ac', label:'В движении' },
+  idle:    { color:'#f6ab3f', label:'Стоит' },
+  offline: { color:'#5a5f73', label:'Оффлайн' },
+};
+
+const map = L.map('fleet-map', { zoomControl:true, attributionControl:true }).setView([43.2380, 76.9200], 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom:19,
+  attribution:'&copy; OpenStreetMap &copy; CARTO'
+}).addTo(map);
+
+function makeIcon(status){
+  const ping = status === 'moving' ? '<span class="marker-ping"></span>' : '';
+  return L.divIcon({
+    className:'',
+    html:'<div style="position:relative; width:14px; height:14px;">' + ping +
+         '<span class="marker-dot marker-' + status + '" style="position:absolute; inset:0;"></span></div>',
+    iconSize:[14,14],
+    iconAnchor:[7,7],
+    popupAnchor:[0,-8]
+  });
+}
+
+function popupHtml(v){
+  const meta = statusMeta[v.status];
+  return '<div class="pop-title">' + v.plate + ' · ' + v.driver + '</div>' +
+    '<div class="pop-row"><span>Статус</span><b style="color:' + meta.color + ';">' + meta.label + '</b></div>' +
+    '<div class="pop-row"><span>Скорость</span><b>' + v.speed + '</b></div>' +
+    '<div class="pop-row"><span>Адрес</span><b>' + v.addr + '</b></div>' +
+    '<div class="pop-row"><span>Задание</span><b>' + v.task + '</b></div>';
+}
+
+const markers = vehicles.map(v => {
+  const m = L.marker([v.lat, v.lng], { icon: makeIcon(v.status) }).addTo(map);
+  m.bindPopup(popupHtml(v));
+  return m;
+});
+
+const listEl = document.getElementById('veh-list');
+vehicles.forEach((v, i) => {
+  const meta = statusMeta[v.status];
+  const row = document.createElement('div');
+  row.className = 'veh-row';
+  row.innerHTML =
+    '<div class="info"><span class="dot" style="background:' + meta.color + ';"></span>' +
+    '<div class="txt"><div class="plate">' + v.plate + ' · ' + v.driver + '</div>' +
+    '<div class="driver">' + v.addr + '</div></div></div>' +
+    '<div class="status" style="color:' + meta.color + ';">' + (v.status==='moving' ? v.speed : meta.label) + '</div>';
+  row.addEventListener('click', () => {
+    document.querySelectorAll('.veh-row').forEach(r => r.classList.remove('active'));
+    row.classList.add('active');
+    map.flyTo([v.lat, v.lng], 14, { duration:0.6 });
+    markers[i].openPopup();
+  });
+  listEl.appendChild(row);
+});
+</script>
 </body>
 </html>
