@@ -60,9 +60,10 @@ img,video{display:block; max-width:100%}
 
 .wrap{width:100%; max-width:1240px; margin:0 auto; padding-inline:24px}
 .eyebrow{
-  display:inline-flex; align-items:center; gap:9px; font-size:12px; letter-spacing:.16em; text-transform:uppercase;
-  color:var(--mint); font-weight:500;
+  display:inline-flex; align-items:center; gap:9px; font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--mint); font-weight:500; white-space:nowrap; hyphens:none;
 }
+@media (max-width:420px){ .eyebrow{font-size:11px; letter-spacing:.08em} }
 .eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 12px var(--mint)}
 .display{font-size:clamp(34px,5.2vw,74px); letter-spacing:-.035em; line-height:1}
 .h2{font-size:clamp(28px,3.8vw,54px); line-height:1.05}
@@ -149,6 +150,20 @@ header.hide{transform:translateY(-140%); opacity:0}
 @media (max-width:1040px){ .nav-links{display:none} .burger{display:flex} .nav-cta .btn-desktop{display:none} }
 @media (min-width:1041px){ .drawer{display:none} }
 
+/* ---------- маршрут через всю страницу ---------- */
+.route-thread{
+  position:absolute; left:0; top:0; width:100%; height:100%; z-index:0; pointer-events:none;
+  opacity:0; transition:opacity .8s var(--ease-out);
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 14%, #000 72%, transparent 93%);
+          mask-image:linear-gradient(to bottom, transparent 0%, #000 14%, #000 72%, transparent 93%);
+}
+.route-thread.on{opacity:.75}
+.route-thread path{fill:none; stroke-linecap:round; stroke-linejoin:round}
+.route-thread .ghost{stroke:rgba(139,92,246,.13); stroke-width:2}
+.route-thread .live{stroke:url(#threadGrad); stroke-width:2.4; filter:drop-shadow(0 0 7px rgba(139,92,246,.9))}
+.route-thread circle{fill:#2FE0AC; filter:drop-shadow(0 0 9px rgba(47,224,172,.95))}
+@media (max-width:768px){ .route-thread{display:none} }
+
 /* =========================================================
    SECTION 1 — HERO (pinned cinematic zoom)
    ========================================================= */
@@ -169,7 +184,7 @@ main{position:relative; z-index:2}
 .layer-panel{transform:translateZ(calc(170px + var(--panel-z,0px))) scale(.88)}
 .hero-media{position:absolute; inset:-4%; z-index:0}
 #city{position:absolute; inset:0; width:100%; height:100%; display:block}
-.hero-video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:var(--video-o,.75); mix-blend-mode:screen; filter:saturate(115%) contrast(108%)}
+.hero-video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:var(--video-o,.5); mix-blend-mode:screen; filter:saturate(118%) contrast(112%)}
 .hero-scrim{position:absolute; inset:0; z-index:1; background:
   radial-gradient(ellipse 74% 58% at 50% 42%, rgba(5,6,8,.12), rgba(5,6,8,.72) 82%),
   linear-gradient(180deg, rgba(5,6,8,.72) 0%, rgba(5,6,8,.08) 38%, rgba(5,6,8,.88) 100%)}
@@ -520,6 +535,21 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
 
 <main id="top">
 
+  <!-- фиолетовый маршрут, который продолжается вниз по странице и растворяется между секциями -->
+  <svg class="route-thread" id="thread" viewBox="0 0 1000 4000" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="threadGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#8B5CF6"/>
+        <stop offset="55%"  stop-color="#7C5CF6"/>
+        <stop offset="100%" stop-color="#2FE0AC"/>
+      </linearGradient>
+    </defs>
+    <path class="ghost" d="M500 760 C 500 1060, 120 1180, 120 1500 S 880 1760, 880 2080 S 170 2360, 170 2680 S 830 2940, 830 3240 L 500 3640" vector-effect="non-scaling-stroke"/>
+    <path class="live" id="thread-path" d="M500 760 C 500 1060, 120 1180, 120 1500 S 880 1760, 880 2080 S 170 2360, 170 2680 S 830 2940, 830 3240 L 500 3640" vector-effect="non-scaling-stroke"/>
+    <circle id="thread-dot" r="5" cx="500" cy="760"/>
+  </svg>
+
+
   <!-- ============================================================
        SECTION 1 — HERO
        ============================================================ -->
@@ -838,9 +868,9 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
    и вся страница подхватит их автоматически.
    ========================================================= */
 const MEDIA = {
-  heroVideo:     'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182120_bd581904-d6cb-4fc7-b17b-23cfdd2a134c.mp4',
+  heroVideo:     'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_201226_34fc0ee3-1dfc-4f44-a9da-cdde16e341fa.mp4',  /* полёт с неба над городом, 1080p */
   heroPoster:    'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_c4ef8c3f-0ebb-4254-bd55-f8dc0e3ca7f0.png',
-  dispatchVideo: 'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182156_62eb3e14-b76c-4b33-ba00-2519cfb8ae90.mp4',
+  dispatchVideo: 'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_201226_d92fc57c-4f04-4c3e-95ea-3d167f82c0db.mp4',  /* мусоровоз по маршруту, 1080p */
   photoBefore:   'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_1de1c13e-9254-4a5e-9a1f-a56a7c94d2bd.png',
   photoAfter:    'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_9e5e4a89-a6ce-4312-be73-bce38daa1c27.png',
 };
@@ -900,8 +930,16 @@ function attachMedia(){
     if(!reduceMotion) play();
     return true;
   };
-  set($('#hero-video'), MEDIA.heroVideo, MEDIA.heroPoster);
-  set($('#disp-video'), MEDIA.dispatchVideo);
+  /* на телефонах видео не грузим вовсе: экономим трафик и декодер,
+     фон рисует canvas-сцена — так скролл остаётся плавным */
+  if(!isMobileView){
+    set($('#hero-video'), MEDIA.heroVideo, MEDIA.heroPoster);
+    set($('#disp-video'), MEDIA.dispatchVideo);
+  }else{
+    const hv = $('#hero-video'), dv = $('#disp-video');
+    if(hv) hv.style.display = 'none';
+    if(dv) dv.style.display = 'none';
+  }
 
   const b = $('#img-before'), a = $('#img-after'), ph = $('#cmp-ph');
   if(MEDIA.photoBefore && !MEDIA.photoBefore.startsWith('__')){
@@ -952,12 +990,39 @@ function onScroll(){
       if(Math.abs(p - s.p) > 0.0005){ s.p = p; s.onProgress(p); }
     });
 
+    updateThread();
     header();
     ticking = false;
   });
 }
 window.addEventListener('scroll', onScroll, { passive:true });
 window.addEventListener('resize', onScroll);
+
+/* ---------------- маршрут через всю страницу ---------------- */
+const thread = $('#thread'), threadPath = $('#thread-path'), threadDot = $('#thread-dot');
+let threadLen = 0;
+function initThread(){
+  if(!threadPath || !threadPath.getTotalLength) return;
+  threadLen = threadPath.getTotalLength();
+  threadPath.style.strokeDasharray = threadLen;
+  threadPath.style.strokeDashoffset = threadLen;
+}
+function updateThread(){
+  if(!threadLen) return;
+  const heroH = $('#hero').offsetHeight;
+  const doc = document.documentElement;
+  const from = heroH * .55, to = doc.scrollHeight - window.innerHeight;
+  const gp = clamp((doc.scrollTop - from) / Math.max(1, to - from));
+  threadPath.style.strokeDashoffset = (threadLen * (1 - gp)).toFixed(1);
+  thread.classList.toggle('on', gp > .003);
+  if(threadDot && gp > 0){
+    const pt = threadPath.getPointAtLength(threadLen * gp);
+    threadDot.setAttribute('cx', pt.x.toFixed(1));
+    threadDot.setAttribute('cy', pt.y.toFixed(1));
+  }
+}
+window.addEventListener('load', initThread);
+setTimeout(initThread, 120);
 
 /* ---------------- шапка ---------------- */
 let lastY = 0;
@@ -1000,112 +1065,300 @@ registerScene(heroEl, p => {
   const fade = clamp(p / .38);
   copy.style.setProperty('--copy-o', (1 - fade).toFixed(3));
   copy.style.setProperty('--copy-b', (9 * fade).toFixed(1) + 'px');
-  media.style.setProperty('--video-o', (.75 - .4 * clamp((p - .3) / .5)).toFixed(2));
+  media.style.setProperty('--video-o', (.52 - .34 * clamp((p - .3) / .5)).toFixed(2));
   cue.style.opacity = String(1 - clamp(p / .12));
 
   /* панель выходит из глубины той же сцены */
-  const up = ease(clamp((p - .2) / .46));
+  const up = ease(clamp((p - .5) / .44));
   dash.style.setProperty('--dash-o', up.toFixed(3));
   panelLayer.style.setProperty('--panel-z', (-280 * (1 - up)).toFixed(1) + 'px');
   dash.classList.toggle('live', up > .9);
-  city.zoom = p * .6;
+  skyCity.p = p;
 });
 
-/* ---------------- canvas: ночной город с трафиком ---------------- */
-const city = (() => {
+/* =========================================================
+   ГЕРОЙ: полёт с неба к улицам Алматы.
+   Одна canvas-сцена: облака → сетка улиц → фиолетовые маршруты
+   → машины на маршрутах → кварталы у земли.
+   Высота камеры привязана к прокрутке (skyCity.p = 0…1).
+   ========================================================= */
+const skyCity = (() => {
   const cv = $('#city'), ctx = cv.getContext('2d');
-  let w = 0, h = 0, dpr = 1, t = 0;
-  const ROADS = 13, SPAN = 2400, CARS = 90;
-  const cars = Array.from({ length:CARS }, () => ({
-    axis: Math.random() > .5 ? 0 : 1,
-    lane: Math.floor(Math.random() * ROADS),
-    pos:  Math.random() * SPAN - SPAN / 2,
-    spd:  (Math.random() * .5 + .35) * (Math.random() > .5 ? 1 : -1),
-    hue:  Math.random() > .45 ? 'v' : 'm',
-  }));
-  const blocks = Array.from({ length:80 }, () => ({
-    x:(Math.random() - .5) * SPAN, z:(Math.random() - .5) * SPAN,
-    w: 60 + Math.random() * 110, hgt: 40 + Math.random() * 230,
-  }));
+  let w = 0, h = 0, dpr = 1;
+  const api = { p: 0 };
+
+  const SPAN = 9000, MINOR = 420, MAJOR = 1680;       /* метры */
+  /* маршруты проложены по сетке улиц: только повороты на 90° */
+  const ROUTES = [
+    { c:'139,92,246', main:true, pts:[[-3360,-2520],[-3360, 840],[0, 840],[0, 3360],[3360, 3360]] },
+    { c:'47,224,172', pts:[[-5040, 2520],[-1680, 2520],[-1680,-1680],[1680,-1680],[1680,-4200]] },
+    { c:'76,155,255', pts:[[3360,-3360],[3360,-840],[5040,-840],[5040, 2520]] },
+  ];
+  /* длины сегментов для движения машин */
+  ROUTES.forEach(r => {
+    r.segs = []; r.total = 0;
+    for(let i = 0; i < r.pts.length - 1; i++){
+      const a = r.pts[i], b = r.pts[i + 1];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      r.segs.push({ a, b, len, start:r.total, ang: Math.atan2(-(b[1] - a[1]), b[0] - a[0]) });
+      r.total += len;
+    }
+  });
+  function onRoute(r, dist){
+    let d = dist % r.total; if(d < 0) d += r.total;
+    for(const sg of r.segs){
+      if(d <= sg.start + sg.len){
+        const k = (d - sg.start) / sg.len;
+        return { x: lerp(sg.a[0], sg.b[0], k), y: lerp(sg.a[1], sg.b[1], k), ang: sg.ang };
+      }
+    }
+    const l = r.segs[r.segs.length - 1];
+    return { x:l.b[0], y:l.b[1], ang:l.ang };
+  }
+  const CARS = [];
+  ROUTES.forEach((r, ri) => {
+    const n = r.main ? 3 : 2;
+    for(let i = 0; i < n; i++) CARS.push({ r, d: r.total * (i / n) + ri * 900, v: 95 + Math.random() * 55, ang:0, truck: r.main && i === 0 });
+  });
+  /* кварталы у земли */
+  const BLOCKS = [];
+  for(let i = 0; i < 150; i++){
+    const gx = Math.round((Math.random() - .5) * SPAN * 1.6 / MINOR) * MINOR + MINOR * .5;
+    const gy = Math.round((Math.random() - .5) * SPAN * 1.6 / MINOR) * MINOR + MINOR * .5;
+    BLOCKS.push({ x:gx, y:gy, hgt: 26 + Math.random() * 130, w: 70 + Math.random() * 110 });
+  }
+  /* огни города: точки на перекрёстках — с высоты читается как ночной Алматы */
+  const TILE = 10080;   /* размер «квартала маршрутов» */
+  const LIGHTS = Array.from({ length: isMobileView ? 220 : 460 }, () => {
+    const gx = Math.round((Math.random() - .5) * SPAN * 2.2 / MINOR) * MINOR;
+    const gy = Math.round((Math.random() - .5) * SPAN * 2.2 / MINOR) * MINOR;
+    const r = Math.random();
+    return {
+      x: gx + (Math.random() - .5) * MINOR * .7,
+      y: gy + (Math.random() - .5) * MINOR * .7,
+      c: r > .82 ? '139,92,246' : (r > .7 ? '47,224,172' : '225,215,180'),
+      i: .35 + Math.random() * .65,
+    };
+  });
+  const STARS = Array.from({ length: 70 }, () => ({ x:Math.random(), y:Math.random() * .42, r:Math.random() * 1.2 + .3, t:Math.random() * 6 }));
+  const CLOUDS = Array.from({ length: 7 }, (_, i) => ({ x:.12 + Math.random() * .76, y:.18 + Math.random() * .5, s:.22 + Math.random() * .4, sp:.6 + Math.random() * .9, o:.5 + Math.random() * .5 }));
+
+  /* камера */
+  let alt = 9000, camDist = 13500, heading = 0, horizon = 0, f = 1;
+  function camera(){
+    const p = clamp(api.p);
+    /* 9 км над городом → 300 м над улицей */
+    alt = 9000 * Math.pow(300 / 9000, Math.pow(p, .85));
+    camDist = alt + 80;
+    /* сверху горизонт за кадром (вид почти в надир), у земли — появляется */
+    horizon = h * lerp(-0.62, 0.30, Math.pow(p, .7));
+    heading = -0.22 + p * 0.4;
+    f = h * 1.12;
+  }
+  function project(x, y){
+    const ca = Math.cos(heading), sa = Math.sin(heading);
+    const rx = x * ca - y * sa, ry = x * sa + y * ca;
+    const d = ry + camDist;
+    if(d < alt * .12) return null;
+    return { X: w / 2 + rx * f / d, Y: horizon + alt * f / d, d };
+  }
+  function line(a, b){ if(!a || !b) return; ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke(); }
 
   function size(){
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, isMobileView ? 1.5 : 2);
     w = cv.clientWidth; h = cv.clientHeight;
-    cv.width = w * dpr; cv.height = h * dpr;
+    cv.width = Math.max(1, w * dpr); cv.height = Math.max(1, h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  const api = { zoom:0 };
 
-  function project(x, z, y = 0){
-    const a = t * .00006 + api.zoom * .5;                 /* медленное вращение + доворот на скролле */
-    const ca = Math.cos(a), sa = Math.sin(a);
-    const rx = x * ca - z * sa, rz = x * sa + z * ca;
-    const camZ = lerp(1250, 460, api.zoom);                /* «влетаем» в сцену */
-    const camY = lerp(520, 300, api.zoom);
-    const d = rz + camZ;
-    if(d < 40) return null;
-    const f = h * 1.05;
-    return { X: w / 2 + rx * f / d, Y: h * .44 + (camY - y) * f / d, d };
+  function drawTruckShape(x, y, ang, k){
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(k, k);
+    ctx.fillStyle = '#eef6f3'; ctx.shadowColor = 'rgba(47,224,172,.9)'; ctx.shadowBlur = 10;
+    ctx.fillRect(-11, -5, 15, 10);
+    ctx.fillStyle = '#2fe0ac';
+    ctx.beginPath(); ctx.moveTo(4, -3.4); ctx.lineTo(11, -3.4); ctx.lineTo(14, 1.4); ctx.lineTo(14, 5); ctx.lineTo(4, 5); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0; ctx.fillStyle = '#0b0f14';
+    ctx.beginPath(); ctx.arc(-6, 6, 2.6, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(9, 6, 2.6, 0, 6.283); ctx.fill();
+    ctx.restore();
   }
-  function line(a, b, color, width){
-    if(!a || !b) return;
-    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
-    ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+
+  /* уровни детализации: чем ниже летим, тем мельче сетка улиц — как в картах */
+  function lodLevels(){
+    const lod = Math.max(0, Math.log2(alt / 3000));
+    const li = Math.floor(lod), fr = lod - li;
+    return [{ s: Math.pow(2, li), a: 1 - fr }, { s: Math.pow(2, li + 1), a: 1 }];
   }
-  function frame(ts){
-    t = ts || 0;
-    if(!w || !h) size();
-    ctx.clearRect(0, 0, w, h);
-
-    /* свечение горизонта */
-    const hg = ctx.createLinearGradient(0, h * .3, 0, h * .78);
-    hg.addColorStop(0, 'rgba(76,79,232,0)');
-    hg.addColorStop(.55, 'rgba(90,80,220,.16)');
-    hg.addColorStop(1, 'rgba(47,224,172,.05)');
-    ctx.fillStyle = hg; ctx.fillRect(0, h * .3, w, h * .5);
-
-    /* дорожная сетка */
-    const step = SPAN / ROADS;
-    for(let i = 0; i <= ROADS; i++){
-      const o = -SPAN / 2 + i * step;
-      line(project(o, -SPAN / 2), project(o, SPAN / 2), 'rgba(158,170,225,.12)', 1);
-      line(project(-SPAN / 2, o), project(SPAN / 2, o), 'rgba(158,170,225,.12)', 1);
+  function drawGrid(step, color, width, range){
+    ctx.strokeStyle = color; ctx.lineWidth = width;
+    for(let v = -range; v <= range; v += step){
+      line(project(v, -range), project(v, range));
+      line(project(-range, v), project(range, v));
     }
-    /* кварталы */
-    blocks.forEach(b => {
-      const p1 = project(b.x, b.z), p2 = project(b.x, b.z, b.hgt);
-      if(!p1 || !p2) return;
-      const fade = clamp(1 - p1.d / 3200);
-      ctx.strokeStyle = 'rgba(139,92,246,' + (.2 * fade).toFixed(3) + ')';
-      ctx.lineWidth = Math.max(.6, b.w * 60 / p1.d);
-      ctx.beginPath(); ctx.moveTo(p1.X, p1.Y); ctx.lineTo(p2.X, p2.Y); ctx.stroke();
-      ctx.fillStyle = 'rgba(150,170,255,' + (.3 * fade).toFixed(3) + ')';
-      ctx.fillRect(p2.X - 1, p2.Y - 1, 2.2, 2.2);
-    });
-    /* трафик */
-    cars.forEach(c => {
-      if(!reduceMotion) c.pos += c.spd * 2.4;
-      if(c.pos > SPAN / 2) c.pos = -SPAN / 2;
-      if(c.pos < -SPAN / 2) c.pos = SPAN / 2;
-      const lane = -SPAN / 2 + c.lane * step;
-      const a = c.axis ? project(lane, c.pos) : project(c.pos, lane);
-      const b = c.axis ? project(lane, c.pos - c.spd * 42) : project(c.pos - c.spd * 42, lane);
-      if(!a || !b) return;
-      const fade = clamp(1 - a.d / 2600);
-      const col = c.hue === 'v' ? '139,92,246' : '47,224,172';
-      ctx.strokeStyle = 'rgba(' + col + ',' + (.85 * fade).toFixed(3) + ')';
-      ctx.lineWidth = Math.max(1.2, 260 / a.d);
-      ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
-      ctx.shadowColor = 'rgba(' + col + ',.9)'; ctx.shadowBlur = 12;
-      ctx.fillStyle = 'rgba(' + col + ',' + (.98 * fade).toFixed(3) + ')';
-      ctx.beginPath(); ctx.arc(a.X, a.Y, Math.max(1.2, 320 / a.d), 0, 6.283); ctx.fill();
-      ctx.shadowBlur = 0;
-    });
   }
+  function drawRouteSet(scale, alpha, low, t){
+    const TILE_S = TILE * scale;
+    const cx = camDist * Math.sin(heading), cy = camDist * Math.cos(heading);
+    const reach = Math.max(1, Math.ceil(alt * 2.6 / TILE_S));
+    const t0x = Math.round(cx / TILE_S), t0y = Math.round(cy / TILE_S);
+    for(let i = -reach; i <= reach; i++){
+      for(let j = -reach; j <= reach; j++){
+        const ox = (t0x + i) * TILE_S, oy = (t0y + j) * TILE_S;
+        ROUTES.forEach(r => {
+          const pts = r.pts.map(pt => project(pt[0] * scale + ox, pt[1] * scale + oy));
+          if(pts.some(q => !q)) return;
+          if(pts.every(q => q.X < -240 || q.X > w + 240 || q.Y < horizon - 80 || q.Y > h + 240)) return;
+          ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+          ctx.strokeStyle = 'rgba(' + r.c + ',' + ((r.main ? .6 : .4) * alpha).toFixed(3) + ')';
+          ctx.lineWidth = (r.main ? 5.5 : 4) * (0.85 + 1.1 * low);
+          ctx.shadowColor = 'rgba(' + r.c + ',' + (.95 * alpha).toFixed(2) + ')'; ctx.shadowBlur = 16 + 14 * low;
+          ctx.beginPath(); pts.forEach((q, k) => k ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y)); ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = 'rgba(' + r.c + ',' + (.95 * alpha).toFixed(3) + ')';
+          ctx.lineWidth = Math.max(1, 1.6 * (0.6 + low));
+          ctx.setLineDash([2, 14]); ctx.lineDashOffset = -t / 26;
+          ctx.beginPath(); pts.forEach((q, k) => k ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y)); ctx.stroke();
+          ctx.setLineDash([]);
+          r.pts.forEach((pt, k) => {
+            if(k === 0 || k === r.pts.length - 1) return;
+            const q = project(pt[0] * scale + ox, pt[1] * scale + oy); if(!q) return;
+            ctx.fillStyle = 'rgba(' + r.c + ',' + (.9 * alpha).toFixed(2) + ')';
+            ctx.shadowColor = 'rgba(' + r.c + ',1)'; ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.arc(q.X, q.Y, 2 + 3 * low, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
+          });
+        });
+      }
+    }
+    return { TILE_S, t0x, t0y };
+  }
+
+  function frame(t, dt){
+    if(!w || !h) size();
+    camera();
+    const p = clamp(api.p);
+    const high = clamp(1 - p / .5);
+    const low  = clamp((p - .45) / .55);
+    const lv = lodLevels();
+    const range = Math.max(alt * 3.4, 4200);
+
+    /* фон и небо */
+    ctx.fillStyle = '#04050a'; ctx.fillRect(0, 0, w, h);
+    if(horizon > 20){
+      const sky = ctx.createLinearGradient(0, 0, 0, horizon + 40);
+      sky.addColorStop(0, '#04050a');
+      sky.addColorStop(.7, '#070a16');
+      sky.addColorStop(1, 'rgba(95,75,200,' + (.14 + .18 * low).toFixed(3) + ')');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, w, horizon + 40);
+    }
+    if(high > .02 && horizon > 60){
+      for(const st of STARS){
+        ctx.globalAlpha = .5 * high * (.6 + .4 * Math.sin(t / 900 + st.t));
+        ctx.fillStyle = 'rgba(200,210,255,1)';
+        ctx.beginPath(); ctx.arc(st.x * w, st.y * horizon, st.r, 0, 6.283); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    /* земля */
+    ctx.fillStyle = 'rgba(9,12,22,.75)';
+    ctx.fillRect(0, Math.max(0, horizon), w, h - Math.max(0, horizon));
+
+    /* сетка улиц: два уровня детализации с плавным переходом */
+    lv.forEach(l => drawGrid(MINOR * l.s, 'rgba(150,165,220,' + (.13 * l.a).toFixed(3) + ')', 1, range));
+    drawGrid(MAJOR * lv[1].s, 'rgba(185,200,255,' + (.24 + .1 * low).toFixed(3) + ')', Math.max(1.3, 2 + 2 * low), range);
+
+    /* огни города */
+    ctx.globalCompositeOperation = 'lighter';
+    lv.forEach(l => {
+      const step = TILE * l.s;
+      const cx = camDist * Math.sin(heading), cy = camDist * Math.cos(heading);
+      const bx = Math.round(cx / step) * step, by = Math.round(cy / step) * step;
+      for(const lt of LIGHTS){
+        const q = project(lt.x * l.s + bx, lt.y * l.s + by);
+        if(!q || q.X < -30 || q.X > w + 30 || q.Y < Math.max(0, horizon) - 6 || q.Y > h + 10) continue;
+        const fade = clamp(1 - q.d / (alt * 24));
+        const rad = Math.max(1.3, Math.min(4, 1800 / q.d * (1 + low)));
+        ctx.fillStyle = 'rgba(' + lt.c + ',' + (lt.i * fade * l.a * .95).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(q.X, q.Y, rad, 0, 6.283); ctx.fill();
+      }
+    });
+    ctx.globalCompositeOperation = 'source-over';
+
+    /* маршруты: непрерывный масштаб — сеть всегда попадает в кадр */
+    const rs = Math.max(0.5, alt / 12000);
+    const near = drawRouteSet(rs, 1, low, t);
+
+    /* кварталы поднимаются у земли */
+    if(low > .05){
+      const step = TILE * rs;
+      const cx = camDist * Math.sin(heading), cy = camDist * Math.cos(heading);
+      const bx = Math.round(cx / step) * step, by = Math.round(cy / step) * step;
+      for(const b of BLOCKS){
+        const g = project(b.x * rs + bx, b.y * rs + by);
+        if(!g || g.Y < horizon) continue;
+        const hpx = b.hgt * f / g.d * low;
+        if(hpx < .5) continue;
+        const fade = clamp(1 - g.d / (alt * 20));
+        const bw = Math.max(1, b.w * f / g.d);
+        ctx.fillStyle = 'rgba(120,140,235,' + (.14 * fade * low).toFixed(3) + ')';
+        ctx.fillRect(g.X - bw / 2, g.Y - hpx, bw, hpx);
+        ctx.fillStyle = 'rgba(190,205,255,' + (.55 * fade * low).toFixed(3) + ')';
+        ctx.fillRect(g.X - bw / 2, g.Y - hpx - 1, bw, 1.2);
+      }
+    }
+
+    /* техника едет по ближнему маршруту — её видно на любой высоте */
+    const scale = rs;
+    const bx = near.t0x * near.TILE_S, by = near.t0y * near.TILE_S;
+    for(const c of CARS){
+      c.d += c.v * dt / 1000 * Math.max(1, scale * .35);
+      const pos = onRoute(c.r, c.d);
+      const q = project(pos.x * scale + bx, pos.y * scale + by);
+      if(!q || q.Y < horizon) continue;
+      const k = f / q.d;
+      c.ang = lerp(c.ang, pos.ang, .2);
+      if(low > .5 && k > .05 && c.truck){
+        drawTruckShape(q.X, q.Y, -c.ang, Math.min(1.6, k * 22));
+      }else{
+        const rad = Math.max(1.6, Math.min(6, 2.4 * (0.8 + low * 2)));
+        ctx.fillStyle = 'rgba(' + c.r.c + ',1)';
+        ctx.shadowColor = 'rgba(' + c.r.c + ',1)'; ctx.shadowBlur = 14;
+        ctx.beginPath(); ctx.arc(q.X, q.Y, rad, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(' + c.r.c + ',' + (.4).toFixed(2) + ')'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(q.X, q.Y, rad + 4 + (Math.sin(t / 400 + c.d * .01) + 1) * 3, 0, 6.283); ctx.stroke();
+      }
+    }
+
+    /* облака: пролетаем сквозь них, пока высоко */
+    if(high > .01){
+      for(const cl of CLOUDS){
+        const grow = 1 + (1 - high) * 2.6;
+        const cx2 = cl.x * w, cy2 = (cl.y + (1 - high) * cl.sp) * h;
+        const rad = cl.s * h * grow;
+        const g = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, rad);
+        const a = cl.o * high * .55;
+        g.addColorStop(0, 'rgba(155,155,215,' + (a * .5).toFixed(3) + ')');
+        g.addColorStop(.55, 'rgba(90,95,165,' + (a * .2).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(10,12,22,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx2, cy2, rad, 0, 6.283); ctx.fill();
+      }
+    }
+
+    /* дымка у горизонта */
+    if(horizon > -60){
+      const haze = ctx.createLinearGradient(0, horizon - 40, 0, horizon + 120);
+      haze.addColorStop(0, 'rgba(139,92,246,0)');
+      haze.addColorStop(.4, 'rgba(110,90,220,' + (.14 + .12 * low).toFixed(3) + ')');
+      haze.addColorStop(1, 'rgba(4,5,10,0)');
+      ctx.fillStyle = haze; ctx.fillRect(0, horizon - 40, w, 160);
+    }
+  }
+
   window.addEventListener('resize', size, { passive:true });
   size(); Ticker.add(frame, cv);
   return api;
 })();
+const city = skyCity;   /* совместимость со старым именем */
 
 /* ---------------- мини-карта внутри панели героя ---------------- */
 const fleet = [
