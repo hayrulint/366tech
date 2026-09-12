@@ -3,919 +3,1196 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>366TECH FLEET — контроль выездных сотрудников и транспорта</title>
-<meta name="description" content="Платформа для диспетчеров и выездных сотрудников: карта транспорта в реальном времени, маршруты, фотоотчётность, геолокация без GPS-датчика.">
+<title>366TECH FLEET — контроль выездных работ и транспорта</title>
+<meta name="description" content="Премиальная платформа контроля автопарка и выездных сотрудников: координаты с GPS-трекера или смартфона, маршруты, фото ДО/ПОСЛЕ, контроль длительных остановок.">
+<meta property="og:title" content="366TECH FLEET — контроль каждого движения автопарка">
+<meta property="og:description" content="GPS-трекер или смартфон сотрудника — одна панель диспетчера, маршруты, фотоотчётность и автоматические нарушения.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24/build/css/intlTelInput.css">
+
+<!-- Tailwind (утилиты-надстройка; вся критичная верстка живёт в CSS ниже) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  if (window.tailwind) tailwind.config = {
+    theme: { extend: {
+      colors: { ink:'#050608', violet:'#8B5CF6', mint:'#2FE0AC', indigo:'#4C4FE8' },
+      fontFamily: { display:['"Space Grotesk"','sans-serif'], sans:['Inter','sans-serif'] },
+    }},
+  };
+</script>
+
 <style>
+/* =========================================================
+   366TECH FLEET — premium scroll experience
+   Палитра, стекло, типографика
+   ========================================================= */
 :root{
-  --bg:#08090d; --bg-1:#0d0f16; --panel:#11131c; --panel-2:#161927; --raised:#1b1e2d;
-  --line:rgba(255,255,255,.08); --line-soft:rgba(255,255,255,.05);
-  --text:#eef0f6; --text-dim:#a2a5b8; --text-mute:#666a80;
-  --violet:#8b5cf6; --violet-soft:#b9a3ff; --violet-deep:#5b3ce0;
-  --mint:#2fe0ac; --mint-deep:#159b78;
+  --bg:#050608; --bg-2:#080a11; --bg-3:#0b0d16;
+  --violet:#8B5CF6; --violet-soft:#b9a3ff; --indigo:#4C4FE8; --mint:#2FE0AC; --mint-soft:#7ff2d3;
   --amber:#f6ab3f; --red:#ff5c7a;
-  --glow-v:rgba(139,92,246,.4); --glow-m:rgba(47,224,172,.32);
-  --radius-s:10px; --radius-m:16px; --radius-l:26px;
+  --text:#f2f4f9; --dim:#a6abbd; --mute:#666c85;
+  --hair:rgba(255,255,255,.08); --hair-2:rgba(255,255,255,.05);
+  --glass:rgba(255,255,255,.035); --glass-2:rgba(255,255,255,.06);
+  --shadow-lg:0 40px 90px -40px rgba(0,0,0,.95);
+  --r-s:12px; --r-m:18px; --r-l:26px; --r-xl:34px;
+  --ease-spring:cubic-bezier(.16,1.2,.3,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth; background:var(--bg); min-height:100%}
+html{scroll-behavior:smooth}
+html.lenis{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto}
 body{
-  margin:0; background:transparent; color:var(--text);
-  font-family:'Inter',ui-sans-serif,sans-serif; -webkit-font-smoothing:antialiased;
-  overflow-x:hidden; min-height:100vh; min-height:100dvh;
+  margin:0; background:var(--bg); color:var(--text); overflow-x:hidden;
+  font-family:'Inter',ui-sans-serif,system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+  font-size:16px; line-height:1.55;
 }
-h1,h2,h3{margin:0; font-family:'Space Grotesk',sans-serif; font-weight:600; letter-spacing:-0.01em; color:#fff;}
+h1,h2,h3,h4{margin:0; font-family:'Space Grotesk',sans-serif; font-weight:600; color:#fff; letter-spacing:-.03em; line-height:1.02}
 p{margin:0}
 a{color:inherit; text-decoration:none}
-ul{margin:0; padding:0; list-style:none}
-button{font-family:inherit; cursor:pointer}
-:focus-visible{outline:2px solid var(--violet-soft); outline-offset:3px; border-radius:4px}
+button{font:inherit; color:inherit; cursor:pointer; border:none; background:none}
+img,video{display:block; max-width:100%}
+:focus-visible{outline:2px solid var(--violet-soft); outline-offset:3px; border-radius:6px}
 ::selection{background:var(--violet); color:#fff}
-img{max-width:100%; display:block}
 
-.wrap{max-width:1180px; margin:0 auto; padding:0 24px}
-.eyebrow{font-size:13px; font-weight:500; color:var(--mint); display:flex; align-items:center; gap:8px}
-.eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 10px var(--mint); flex-shrink:0}
+.wrap{width:100%; max-width:1240px; margin:0 auto; padding-inline:24px}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:9px; font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--mint); font-weight:500;
+}
+.eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 12px var(--mint)}
+.display{font-size:clamp(34px,5.2vw,74px); letter-spacing:-.035em; line-height:1}
+.h2{font-size:clamp(28px,3.8vw,54px); line-height:1.05}
+.grad{background:linear-gradient(104deg,var(--violet-soft) 0%,#c6b6ff 32%,var(--mint) 88%); -webkit-background-clip:text; background-clip:text; color:transparent}
+.lead{font-size:clamp(16px,1.4vw,19px); color:var(--dim); line-height:1.62; font-weight:300}
+.muted{color:var(--mute); font-size:13px}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
 
-/* ---------- animated background layer (структура из index.html + живой mesh-gradient) ---------- */
-.aurora{
-  position:fixed; top:0; left:0; width:100%; height:100vh; height:100lvh;
-  z-index:-1; pointer-events:none; overflow:hidden;
-  background:var(--bg); contain:layout paint;
+/* ---------- стекло и кнопки ---------- */
+.glass{
+  background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.022));
+  border:1px solid var(--hair); border-radius:var(--r-l);
+  backdrop-filter:blur(22px) saturate(130%); -webkit-backdrop-filter:blur(22px) saturate(130%);
+  box-shadow:var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.09);
 }
-/* 1) медленно вращающийся mesh-градиент — квадрат 170vmax, всегда перекрывает экран */
-.aurora .mesh{
-  position:absolute; left:50%; top:50%; width:170vmax; height:170vmax; margin:-85vmax 0 0 -85vmax;
-  background:
-    radial-gradient(22% 20% at 30% 32%, rgba(139,92,246,.34), transparent 70%),
-    radial-gradient(20% 18% at 70% 30%, rgba(47,224,172,.22), transparent 70%),
-    radial-gradient(24% 22% at 66% 70%, rgba(76,110,245,.24), transparent 70%),
-    radial-gradient(18% 18% at 32% 68%, rgba(255,92,122,.16), transparent 70%);
-  animation:meshSpin 70s linear infinite;
-  will-change:transform;
+.btn{
+  --btn-bg:transparent;
+  position:relative; display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  padding:14px 26px; border-radius:9999px; font-size:14.5px; font-weight:500; letter-spacing:-.01em;
+  transition:transform .35s var(--ease-spring), box-shadow .35s var(--ease-out), background .25s ease, border-color .25s ease, color .25s ease;
+  white-space:nowrap; overflow:hidden;
 }
-@keyframes meshSpin{
-  0%  {transform:rotate(0deg)   scale(1)}
-  50% {transform:rotate(180deg) scale(1.18)}
-  100%{transform:rotate(360deg) scale(1)}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(120deg,var(--violet),#6a3ff2 55%,var(--indigo)); color:#fff; box-shadow:0 18px 44px -18px rgba(139,92,246,.85)}
+.btn-primary:hover{box-shadow:0 24px 60px -18px rgba(139,92,246,1)}
+.btn-primary::after{
+  content:''; position:absolute; inset:0; background:linear-gradient(120deg,transparent 20%,rgba(255,255,255,.32) 48%,transparent 72%);
+  transform:translateX(-130%); transition:transform .85s var(--ease-out);
 }
-/* 2) неоновые пятна — дрейфуют по «органичным» траекториям и мягко пульсируют */
-.aurora .blob{
-  position:absolute; border-radius:50%; filter:blur(60px); opacity:.55; will-change:transform, opacity;
-}
-.aurora .b1{ width:min(640px,120vw); aspect-ratio:1; top:-220px; left:-160px;
-  background:radial-gradient(circle,var(--glow-v),transparent 70%);
-  animation:drift1 26s ease-in-out infinite, glow 9s ease-in-out infinite alternate; }
-.aurora .b2{ width:min(560px,110vw); aspect-ratio:1; top:120px; right:-200px;
-  background:radial-gradient(circle,var(--glow-m),transparent 70%);
-  animation:drift2 30s ease-in-out infinite, glow 11s ease-in-out -4s infinite alternate; }
-.aurora .b3{ width:min(480px,100vw); aspect-ratio:1; bottom:-260px; left:30%;
-  background:radial-gradient(circle,rgba(255,92,122,.26),transparent 70%);
-  animation:drift3 34s ease-in-out infinite, glow 13s ease-in-out -7s infinite alternate; }
-.aurora .b4{ width:260px; aspect-ratio:1; top:42%; left:12%; filter:blur(40px);
-  background:radial-gradient(circle,rgba(185,163,255,.55),transparent 68%);
-  animation:neon1 22s ease-in-out infinite, glow 6s ease-in-out -2s infinite alternate; }
-.aurora .b5{ width:220px; aspect-ratio:1; top:18%; left:58%; filter:blur(40px);
-  background:radial-gradient(circle,rgba(47,224,172,.5),transparent 68%);
-  animation:neon2 19s ease-in-out infinite, glow 7s ease-in-out -5s infinite alternate; }
-@keyframes drift1{
-  0%,100%{transform:translate3d(0,0,0) scale(1)}
-  25%{transform:translate3d(10vw,8vh,0) scale(1.15)}
-  50%{transform:translate3d(18vw,20vh,0) scale(.95)}
-  75%{transform:translate3d(4vw,14vh,0) scale(1.22)}
-}
-@keyframes drift2{
-  0%,100%{transform:translate3d(0,0,0) scale(1)}
-  30%{transform:translate3d(-12vw,10vh,0) scale(1.2)}
-  60%{transform:translate3d(-4vw,24vh,0) scale(.9)}
-  80%{transform:translate3d(-14vw,6vh,0) scale(1.1)}
-}
-@keyframes drift3{
-  0%,100%{transform:translate3d(0,0,0) scale(1)}
-  35%{transform:translate3d(12vw,-12vh,0) scale(1.25)}
-  70%{transform:translate3d(-10vw,-6vh,0) scale(1.05)}
-}
-@keyframes neon1{
-  0%,100%{transform:translate3d(0,0,0)}
-  25%{transform:translate3d(28vw,-14vh,0)}
-  50%{transform:translate3d(52vw,8vh,0)}
-  75%{transform:translate3d(20vw,18vh,0)}
-}
-@keyframes neon2{
-  0%,100%{transform:translate3d(0,0,0)}
-  33%{transform:translate3d(-30vw,30vh,0)}
-  66%{transform:translate3d(14vw,48vh,0)}
-}
-@keyframes glow{ 0%{opacity:.35} 100%{opacity:.8} }
-/* 3) тонкая «техно»-сетка, растворяющаяся к краям */
-.aurora .grid{
-  position:absolute; inset:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-  background-size:56px 56px;
-  -webkit-mask-image:radial-gradient(ellipse 75% 60% at 50% 0%, #000 15%, transparent 72%);
-          mask-image:radial-gradient(ellipse 75% 60% at 50% 0%, #000 15%, transparent 72%);
-}
-/* 4) световое пятно за курсором (только мышь/трекпад) */
-.aurora .spot{
-  position:absolute; left:0; top:0; width:560px; height:560px; margin:-280px 0 0 -280px; border-radius:50%;
-  background:radial-gradient(circle, rgba(139,92,246,.16), rgba(47,224,172,.07) 42%, transparent 70%);
-  opacity:0; transition:opacity .6s ease; will-change:transform;
-}
-.aurora .spot.on{opacity:1}
-/* 5) лёгкое зерно + виньетка для «дорогой» глубины и читаемости текста */
-.aurora .noise{
-  position:absolute; inset:0; opacity:.045;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.aurora .vignette{
-  position:absolute; inset:0;
-  background:radial-gradient(ellipse 120% 90% at 50% 35%, transparent 45%, rgba(8,9,13,.7) 100%);
-}
-@media (max-width:600px){
-  .aurora .blob{filter:blur(46px)}
-  .aurora .b4,.aurora .b5{filter:blur(32px); width:170px}
-  .aurora .grid{background-size:40px 40px}
-}
-@media (prefers-reduced-motion:reduce){
-  .aurora .mesh,.aurora .blob{animation:none}
-  .aurora .spot{display:none}
-}
+.btn-primary:hover::after{transform:translateX(130%)}
+.btn-glass{background:var(--glass); border:1px solid var(--hair); color:var(--text); backdrop-filter:blur(12px)}
+.btn-glass:hover{background:var(--glass-2); border-color:rgba(255,255,255,.2)}
+.btn-mint{background:var(--mint); color:#042019; box-shadow:0 18px 44px -20px rgba(47,224,172,.9)}
+.btn-mint:hover{filter:brightness(1.06)}
+.btn-sm{padding:10px 18px; font-size:13.5px}
 
-/* ---------- header ---------- */
-header{position:fixed; top:0; left:0; right:0; z-index:2000; padding:16px 0}
-.header-inner{
-  max-width:1180px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
-  background:rgba(13,15,22,.72); border:1px solid var(--line); border-radius:9999px; backdrop-filter:blur(16px);
+/* ---------- фоновое свечение ---------- */
+.ambient{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; background:var(--bg)}
+.ambient i{position:absolute; display:block; border-radius:50%; filter:blur(90px)}
+.ambient .a1{width:820px; height:820px; top:-360px; left:-220px; background:radial-gradient(circle,rgba(139,92,246,.38),transparent 68%); animation:drift1 34s ease-in-out infinite}
+.ambient .a2{width:700px; height:700px; top:35%; right:-280px; background:radial-gradient(circle,rgba(47,224,172,.2),transparent 70%); animation:drift2 40s ease-in-out infinite}
+.ambient .a3{width:760px; height:760px; bottom:-340px; left:28%; background:radial-gradient(circle,rgba(76,79,232,.28),transparent 70%); animation:drift3 46s ease-in-out infinite}
+@keyframes drift1{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(14vw,12vh,0) scale(1.25)}}
+@keyframes drift2{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-12vw,-14vh,0) scale(1.18)}}
+@keyframes drift3{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(10vw,-10vh,0) scale(1.22)}}
+.grain{
+  position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-.brand{display:flex; align-items:center; gap:10px}
+.vignette{position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse 110% 80% at 50% 40%, transparent 45%, rgba(5,6,8,.85) 100%)}
+
+/* ---------- прогресс скролла + шапка ---------- */
+.progress{position:fixed; top:0; left:0; height:2px; z-index:120; width:100%; background:transparent}
+.progress i{display:block; height:100%; width:var(--sp,0%); background:linear-gradient(90deg,var(--violet),var(--mint)); box-shadow:0 0 18px rgba(139,92,246,.9)}
+header{position:fixed; top:16px; left:0; right:0; z-index:110; transition:transform .45s var(--ease-out), opacity .45s var(--ease-out)}
+header.hide{transform:translateY(-140%); opacity:0}
+.nav{
+  max-width:1240px; margin:0 auto; padding:10px 10px 10px 18px; display:flex; align-items:center; gap:18px;
+  border-radius:9999px; border:1px solid var(--hair); background:rgba(8,10,17,.6); backdrop-filter:blur(20px) saturate(140%);
+  box-shadow:0 20px 50px -30px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.brand{display:flex; align-items:center; gap:11px; flex-shrink:0}
 .brand .mark{
-  width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--violet),var(--mint));
-  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; color:#0a0a0f; font-family:'Space Grotesk',sans-serif;
+  width:34px; height:34px; border-radius:11px; background:linear-gradient(135deg,var(--violet),var(--mint));
+  display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11.5px; color:#050608;
+  box-shadow:0 8px 22px -8px rgba(139,92,246,.9);
 }
-.brand .name{font-weight:600; font-size:15px; letter-spacing:-0.01em}
-.brand .name span{color:var(--text-dim); font-weight:500}
+.brand b{font-weight:600; font-size:14.5px; letter-spacing:-.01em}
+.nav-links{display:flex; align-items:center; gap:4px; margin-left:6px}
+.nav-links a{padding:8px 14px; border-radius:9999px; font-size:13.5px; color:var(--dim); transition:color .2s ease, background .2s ease}
+.nav-links a:hover{color:#fff; background:rgba(255,255,255,.06)}
+.nav-cta{margin-left:auto; display:flex; align-items:center; gap:8px}
+.burger{display:none; width:40px; height:40px; border-radius:50%; border:1px solid var(--hair); flex-direction:column; align-items:center; justify-content:center; gap:4px}
+.burger span{width:15px; height:1.5px; background:#fff; display:block; transition:transform .3s var(--ease-out), opacity .3s}
+.burger.on span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+.burger.on span:nth-child(2){opacity:0}
+.burger.on span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+.drawer{max-width:1240px; margin:8px auto 0; padding-inline:10px; max-height:0; overflow:hidden; transition:max-height .4s var(--ease-out)}
+.drawer.on{max-height:360px}
+.drawer-in{border:1px solid var(--hair); border-radius:24px; background:rgba(8,10,17,.92); backdrop-filter:blur(18px); padding:10px}
+.drawer a{display:block; padding:13px 16px; border-radius:14px; color:var(--dim); font-size:15px}
+.drawer a:active{background:rgba(255,255,255,.06)}
+@media (max-width:1040px){ .nav-links{display:none} .burger{display:flex} .nav-cta .btn-desktop{display:none} }
+@media (min-width:1041px){ .drawer{display:none} }
 
-.nav-links{display:flex; align-items:center; gap:26px}
-.nav-links a{font-size:14px; color:var(--text-dim); transition:color .15s ease; padding:4px 0}
-.nav-links a:hover{color:#fff}
-
-.header-actions{display:flex; align-items:center; gap:10px}
-.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:9999px; font-weight:500; font-size:14px; cursor:pointer; border:none; white-space:nowrap; padding:11px 22px; transition:filter .15s ease, transform .15s ease, background .15s ease, border-color .15s ease}
-.btn-primary{background:linear-gradient(135deg,var(--violet),#6d3ff0); color:#fff; box-shadow:0 8px 24px -8px var(--glow-v)}
-.btn-primary:hover{filter:brightness(1.1); transform:translateY(-1px)}
-.btn-ghost{background:transparent; color:var(--text-dim); border:1px solid var(--line)}
-.btn-ghost:hover{color:#fff; border-color:rgba(255,255,255,.2)}
-.btn-outline{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.18)}
-.btn-outline:hover{background:rgba(255,255,255,.06)}
-.btn-mint{background:var(--mint); color:#08281f}
-.btn-mint:hover{filter:brightness(1.08)}
-.btn-sm{padding:9px 16px; font-size:13px}
-.btn-block{width:100%}
-
-.burger{display:none; width:40px; height:40px; align-items:center; justify-content:center; background:transparent; border:1px solid var(--line); border-radius:50%; flex-direction:column; gap:4px}
-.burger span{display:block; width:16px; height:1.5px; background:#fff; transition:transform .25s ease, opacity .25s ease}
-.burger.open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
-.burger.open span:nth-child(2){opacity:0}
-.burger.open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
-
-.mobile-drawer{
-  max-width:1180px; margin:8px auto 0; padding:0 16px;
-  max-height:0; overflow:hidden; transition:max-height .35s ease;
+/* =========================================================
+   SECTION 1 — HERO (pinned cinematic zoom)
+   ========================================================= */
+main{position:relative; z-index:2}
+.scene{position:relative}
+.scene__stage{position:sticky; top:0; height:100svh; overflow:hidden; display:grid; place-items:center}
+#hero{height:300vh}
+.hero-media{position:absolute; inset:-6%; z-index:0; transform:scale(var(--media-s,1)) translate3d(0,var(--media-y,0px),0); will-change:transform}
+#city{width:100%; height:100%; display:block}
+.hero-video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:var(--video-o,.75); mix-blend-mode:screen; filter:saturate(115%) contrast(108%)}
+.hero-scrim{position:absolute; inset:0; z-index:1; background:
+  radial-gradient(ellipse 74% 58% at 50% 42%, rgba(5,6,8,.12), rgba(5,6,8,.72) 82%),
+  linear-gradient(180deg, rgba(5,6,8,.72) 0%, rgba(5,6,8,.08) 38%, rgba(5,6,8,.88) 100%)}
+.hero-copy{
+  position:relative; z-index:3; text-align:center; max-width:1000px; padding-inline:24px;
+  opacity:var(--copy-o,1); transform:translate3d(0,var(--copy-y,0px),0) scale(var(--copy-s,1)); filter:blur(var(--copy-b,0px));
+  will-change:transform,opacity;
 }
-.mobile-drawer.open{max-height:420px}
-.mobile-drawer-inner{background:rgba(13,15,22,.94); border:1px solid var(--line); border-radius:20px; backdrop-filter:blur(16px); padding:10px}
-.mobile-drawer a{display:block; padding:13px 16px; font-size:15px; color:var(--text-dim); border-radius:12px}
-.mobile-drawer a:active{background:rgba(255,255,255,.05)}
+.hero-copy h1{margin-top:22px}
+.hero-copy .lead{margin:22px auto 0; max-width:600px}
+.hero-actions{display:flex; gap:14px; justify-content:center; margin-top:32px; flex-wrap:wrap}
+.kpis{display:flex; justify-content:center; gap:clamp(18px,4.5vw,56px); margin-top:40px; flex-wrap:wrap}
+.kpi .v{font-family:'Space Grotesk',sans-serif; font-size:clamp(22px,2.4vw,32px); font-weight:600; color:#fff}
+.kpi .l{font-size:12px; color:var(--mute); margin-top:4px; letter-spacing:.03em}
+.scroll-cue{position:absolute; bottom:26px; left:50%; transform:translateX(-50%); z-index:4; display:flex; flex-direction:column; align-items:center; gap:10px; color:var(--mute); font-size:11.5px; letter-spacing:.18em; text-transform:uppercase; opacity:var(--copy-o,1)}
+.scroll-cue i{width:22px; height:36px; border:1px solid var(--hair); border-radius:9999px; position:relative; display:block}
+.scroll-cue i::after{content:''; position:absolute; left:50%; top:8px; width:3px; height:7px; margin-left:-1.5px; border-radius:3px; background:var(--mint); animation:cue 1.8s ease-in-out infinite}
+@keyframes cue{0%{transform:translateY(0); opacity:1}70%{transform:translateY(12px); opacity:0}100%{opacity:0}}
 
-@media (max-width:900px){
-  .nav-links{display:none}
-  .header-desktop-cta{display:none}
-  .burger{display:flex}
-  header{padding:12px 12px 0}
+/* dispatch-панель, в которую «влетает» камера */
+.dispatch{
+  position:absolute; z-index:4; width:min(1080px,92vw); aspect-ratio:16/10; max-height:78svh;
+  opacity:var(--dash-o,0); transform:perspective(1600px) rotateX(var(--dash-rx,18deg)) scale(var(--dash-s,.62)) translate3d(0,var(--dash-y,60px),0);
+  transform-origin:50% 60%; will-change:transform,opacity; pointer-events:none;
 }
-@media (min-width:901px){ .mobile-drawer{display:none} }
+.dispatch.live{pointer-events:auto}
+.dispatch-in{position:absolute; inset:0; border-radius:var(--r-xl); overflow:hidden; display:grid; grid-template-rows:auto auto 1fr}
+.d-bar{display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--hair-2); background:rgba(255,255,255,.02)}
+.dots{display:flex; gap:6px}
+.dots i{width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.16); display:block}
+.dots i:first-child{background:rgba(255,92,122,.7)} .dots i:nth-child(2){background:rgba(246,171,63,.7)} .dots i:nth-child(3){background:rgba(47,224,172,.7)}
+.d-bar .t{font-size:12.5px; color:var(--mute)}
+.chip-live{margin-left:auto; display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--mint); background:rgba(47,224,172,.1); border:1px solid rgba(47,224,172,.24); padding:5px 11px; border-radius:9999px}
+.chip-live i{width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 8px var(--mint); animation:pulse 1.9s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.28}}
+.d-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--hair-2)}
+.d-stat{padding:14px 18px; background:rgba(8,10,17,.55)}
+.d-stat .l{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
+.d-stat .v{font-family:'Space Grotesk',sans-serif; font-size:clamp(18px,2vw,26px); color:#fff; margin-top:5px}
+.d-stat .s{font-size:11px; color:var(--mute); margin-top:2px}
+.d-body{display:grid; grid-template-columns:1fr 246px; min-height:0}
+.d-map{position:relative; overflow:hidden; background:radial-gradient(ellipse at 40% 30%, rgba(139,92,246,.14), transparent 60%), #06070c}
+.d-map canvas{width:100%; height:100%; display:block}
+.d-side{border-left:1px solid var(--hair-2); padding:12px; display:flex; flex-direction:column; gap:6px; overflow:hidden; background:rgba(5,6,8,.4)}
+.d-row{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:12px; transition:background .2s ease}
+.d-row:hover{background:rgba(255,255,255,.05)}
+.d-row .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0}
+.d-row .n{font-size:12.5px; color:#fff; font-weight:500}
+.d-row .m{font-size:11px; color:var(--mute)}
+.d-row .r{margin-left:auto; font-size:11.5px; text-align:right}
 
-/* ---------- hero ---------- */
-.hero{position:relative; padding:168px 0 90px; text-align:center}
-.hero .chip{
-  display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.04); border:1px solid var(--line);
-  border-radius:9999px; padding:7px 16px 7px 8px; font-size:13px; color:var(--text-dim);
+/* =========================================================
+   Общая секционная типографика
+   ========================================================= */
+.section{position:relative; padding:clamp(90px,12vw,170px) 0}
+.section-head{max-width:760px}
+.section-head h2{margin-top:20px}
+.section-head .lead{margin-top:22px}
+.reveal{opacity:0; transform:translate3d(0,32px,0); transition:opacity .9s var(--ease-out), transform .9s var(--ease-out)}
+.reveal.in{opacity:1; transform:none}
+.reveal[data-d="1"]{transition-delay:.08s} .reveal[data-d="2"]{transition-delay:.16s}
+.reveal[data-d="3"]{transition-delay:.24s} .reveal[data-d="4"]{transition-delay:.32s}
+
+/* =========================================================
+   SECTION 2 — LIVE DISPATCHING (pinned)
+   ========================================================= */
+#dispatching{height:340vh}
+#dispatching .scene__stage{display:block}
+.disp-grid{
+  position:absolute; inset:0; display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+  gap:clamp(24px,4vw,64px); align-items:center; max-width:1240px; margin:0 auto; padding:96px 24px 64px;
 }
-.hero .chip .tag{background:linear-gradient(135deg,var(--violet),var(--mint)); color:#08090d; font-weight:600; font-size:11px; border-radius:9999px; padding:4px 10px}
-.hero h1{font-size:clamp(34px,6vw,66px); line-height:1.06; letter-spacing:-0.02em; max-width:820px; margin:30px auto 0}
-.hero h1 em{font-style:normal; color:transparent; background:linear-gradient(120deg,var(--violet-soft),var(--mint)); -webkit-background-clip:text; background-clip:text}
-.hero p.lead{font-size:18px; color:var(--text-dim); max-width:560px; margin:22px auto 0; line-height:1.6}
-.hero .cta-row{display:flex; gap:14px; justify-content:center; margin-top:36px; flex-wrap:wrap}
-
-.stat-strip{display:flex; justify-content:center; gap:48px; margin-top:64px; flex-wrap:wrap}
-.stat-strip .stat{text-align:center}
-.stat-strip .stat .num{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:600; color:#fff}
-.stat-strip .stat .lbl{font-size:13px; color:var(--text-mute); margin-top:4px}
-
-/* ---------- generic section ---------- */
-section{padding:100px 0; position:relative}
-.section-head{max-width:600px; margin-bottom:48px}
-.section-head h2{font-size:clamp(26px,3.4vw,38px); margin-top:10px; line-height:1.2}
-.section-head p{color:var(--text-dim); margin-top:14px; line-height:1.6; font-size:15px}
-.center{text-align:center; margin-left:auto; margin-right:auto}
-
-.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:26px}
-.grid2{display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:center}
-@media (max-width:860px){ .grid3{grid-template-columns:1fr} .grid2{grid-template-columns:1fr; gap:40px} }
-
-.panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-l)}
-.panel-pad{padding:30px}
-.card-sm{background:var(--panel-2); border:1px solid var(--line-soft); border-radius:var(--radius-m); padding:24px}
-
-/* three-step intro */
-.step-num{width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color:#08090d; flex-shrink:0}
-
-/* table */
-.table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-l); overflow-x:auto; -webkit-overflow-scrolling:touch}
-table{width:100%; min-width:520px; border-collapse:collapse}
-th{text-align:left; font-size:12px; font-weight:500; color:var(--text-mute); padding:16px 22px; border-bottom:1px solid var(--line); white-space:nowrap}
-td{padding:15px 22px; font-size:14px; color:var(--text-dim); border-top:1px solid var(--line-soft); white-space:nowrap}
-tr:first-child td{border-top:none}
-td:first-child{color:#fff; font-weight:500}
-@media (max-width:600px){
-  .table-wrap{border-radius:var(--radius-m)}
-  table{min-width:600px}
-  th,td{padding:13px 16px}
+.disp-grid > *{min-width:0}
+.disp-steps{display:flex; flex-direction:column; gap:14px; min-width:0; max-width:100%}
+.step{
+  padding:18px 20px; border-radius:var(--r-m); border:1px solid transparent; transition:all .55s var(--ease-out);
+  opacity:.34; transform:translateX(-8px);
 }
-.pill-tag{font-size:12px; padding:3px 10px; border-radius:9999px; display:inline-block}
-.pill-mint{background:rgba(47,224,172,.12); color:var(--mint)}
-.pill-violet{background:rgba(139,92,246,.15); color:var(--violet-soft)}
-
-/* dispatcher / map */
-.map-shell{display:grid; grid-template-columns:1.5fr 1fr; border:1px solid var(--line); border-radius:var(--radius-l); overflow:hidden; background:var(--panel)}
-@media (max-width:900px){ .map-shell{grid-template-columns:1fr} }
-.map-top{display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid var(--line); grid-column:1/-1}
-.live-dot{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--mint)}
-.live-dot .d{width:7px; height:7px; border-radius:50%; background:var(--mint); box-shadow:0 0 8px var(--mint); animation:pulse 1.8s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1} 50%{opacity:.35}}
-#fleet-map{height:420px; width:100%; background:#0c0e14; position:relative; z-index:0; isolation:isolate}
-.map-side{padding:18px; display:flex; flex-direction:column; gap:6px; max-height:420px; overflow:auto}
-.veh-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 12px; border-radius:12px; cursor:pointer; transition:background .15s ease}
-.veh-row:hover, .veh-row.active{background:rgba(255,255,255,.05)}
-.veh-row .info{display:flex; align-items:center; gap:10px; min-width:0}
-.veh-row .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0}
-.veh-row .txt{min-width:0}
-.veh-row .plate{font-size:13px; font-weight:500; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.veh-row .driver{font-size:12px; color:var(--text-mute)}
-.veh-row .status{font-size:12px; white-space:nowrap; flex-shrink:0}
-.legend{display:flex; gap:16px; padding:14px 22px; border-top:1px solid var(--line); font-size:12px; color:var(--text-mute); flex-wrap:wrap; grid-column:1/-1}
-.legend span{display:inline-flex; align-items:center; gap:6px}
-.legend i{width:8px; height:8px; border-radius:50%; display:inline-block}
-
-/* leaflet popup skin */
-.leaflet-popup-content-wrapper{background:#161927; color:#eef0f6; border-radius:14px; border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 40px -12px rgba(0,0,0,.6)}
-.leaflet-popup-tip{background:#161927}
-.leaflet-popup-content{margin:14px 16px; font-family:'Inter',sans-serif}
-.pop-title{font-weight:600; font-size:14px; color:#fff; margin-bottom:8px}
-.pop-row{display:flex; justify-content:space-between; gap:14px; font-size:12.5px; padding:4px 0; color:#a2a5b8}
-.pop-row b{color:#eef0f6; font-weight:500}
-.leaflet-control-attribution{background:rgba(10,11,16,.7) !important; color:#666a80 !important; border-radius:8px 0 0 0}
-.leaflet-control-attribution a{color:#9297ac !important}
-.leaflet-control-zoom a{background:#161927 !important; color:#eef0f6 !important; border-color:var(--line) !important}
-
-.marker-dot{border-radius:50%; display:block; box-shadow:0 0 0 5px rgba(0,0,0,0)}
-.marker-moving{background:var(--mint); box-shadow:0 0 0 6px rgba(47,224,172,.22)}
-.marker-idle{background:var(--amber); box-shadow:0 0 0 6px rgba(246,171,63,.2)}
-.marker-offline{background:#5a5f73; box-shadow:0 0 0 6px rgba(90,95,115,.16)}
-.marker-ping{position:absolute; inset:-6px; border-radius:50%; border:2px solid var(--mint); animation:ping 1.8s ease-out infinite}
-@keyframes ping{0%{transform:scale(.5); opacity:.9} 100%{transform:scale(1.8); opacity:0}}
-@media (prefers-reduced-motion:reduce){ .marker-ping,.live-dot .d{animation:none} }
-
-/* alert card */
-.alert-card{overflow:hidden}
-.alert-head{display:flex; align-items:center; gap:12px; padding:22px 24px; border-bottom:1px solid var(--line)}
-.alert-icon{width:36px; height:36px; border-radius:50%; background:rgba(246,171,63,.15); color:var(--amber); display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0}
-.alert-body{padding:20px 24px}
-.alert-row{display:flex; justify-content:space-between; font-size:13.5px; padding:9px 0; border-top:1px solid var(--line-soft)}
-.alert-row:first-child{border-top:none}
-.alert-row span:first-child{color:var(--text-mute)}
-.alert-foot{display:flex; justify-content:space-between; padding:14px 24px; border-top:1px solid var(--line); font-size:13px}
-
-/* industries — mobile-first: 1 колонка → 2 (планшет) → 3 (ПК) */
-#industries .section-head{margin-bottom:28px}
-.ind-grid{display:grid; grid-template-columns:1fr; gap:12px}
-.ind-card{
-  display:flex; align-items:flex-start; gap:16px; min-width:0;
-  background:linear-gradient(180deg, rgba(27,30,45,.82), rgba(17,19,28,.82));
-  border:1px solid var(--line); border-radius:20px; padding:18px 18px 20px;
-  transition:border-color .2s ease, transform .2s ease, box-shadow .2s ease;
-  -webkit-tap-highlight-color:transparent;
+.step.on{opacity:1; transform:none; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border-color:var(--hair); box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.step .n{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:9px; font-size:12px; font-weight:600; font-family:'Space Grotesk',sans-serif; color:#050608; background:var(--violet-soft); margin-bottom:12px}
+.step.on .n{background:linear-gradient(135deg,var(--violet),var(--mint))}
+.step h3{font-size:19px; letter-spacing:-.02em}
+.step p{font-size:14.5px; color:var(--dim); margin-top:7px; line-height:1.6}
+.stage-frame{position:relative; border-radius:var(--r-xl); overflow:hidden; aspect-ratio:16/10; max-height:72svh}
+.stage-frame video, .stage-frame canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.stage-frame .frame-scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,6,8,.35), rgba(5,6,8,.1) 40%, rgba(5,6,8,.72))}
+.badge{
+  position:absolute; z-index:5; display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:16px;
+  background:rgba(11,13,22,.78); border:1px solid var(--hair); backdrop-filter:blur(16px) saturate(140%);
+  box-shadow:0 22px 50px -26px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.08);
+  opacity:0; transform:translate3d(0,18px,0) scale(.86); transition:opacity .5s var(--ease-out), transform .75s var(--ease-spring);
+  white-space:nowrap; max-width:min(280px,60%);
 }
-.ind-card:active{border-color:rgba(139,92,246,.45)}
-.ind-icon{
-  width:46px; height:46px; flex-shrink:0; border-radius:14px; display:flex; align-items:center; justify-content:center;
-  background:rgba(139,92,246,.14); border:1px solid rgba(139,92,246,.28); color:var(--violet-soft);
-}
-.ind-icon.mint{background:rgba(47,224,172,.1); border-color:rgba(47,224,172,.26); color:var(--mint)}
-.ind-icon.rose{background:rgba(255,92,122,.1); border-color:rgba(255,92,122,.26); color:#ff8fa3}
-.ind-icon svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
-.ind-body{min-width:0}
-.ind-card h3{font-size:17px; line-height:1.3; margin:2px 0 6px}
-.ind-card p{color:var(--text-dim); font-size:15px; line-height:1.55}
-@media (max-width:599px){
-  #industries{padding:72px 0}
-  #industries .wrap{padding:0 16px}
-}
-@media (min-width:600px){
-  #industries .section-head{margin-bottom:40px}
-  .ind-grid{grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px}
-  .ind-card{flex-direction:column; gap:18px; padding:24px; border-radius:22px}
-  .ind-card h3{margin-top:0}
-}
-@media (min-width:1024px){
-  #industries .section-head{margin-bottom:48px}
-  .ind-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px}
-  .ind-card{padding:28px}
-  .ind-card p{font-size:14.5px}
-}
-@media (hover:hover){
-  .ind-card:hover{border-color:rgba(139,92,246,.45); transform:translateY(-3px); box-shadow:0 20px 44px -22px var(--glow-v)}
-}
+.badge.on{opacity:1; transform:none}
+.badge .ic{width:30px; height:30px; border-radius:10px; display:grid; place-items:center; flex-shrink:0}
+.badge .ic svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.badge .t1{display:block; font-size:12.5px; font-weight:500; color:#fff; line-height:1.3}
+.badge .t2{display:block; font-size:11px; color:var(--mute); margin-top:2px}
+.b-violet .ic{background:rgba(139,92,246,.18); color:var(--violet-soft)}
+.b-mint .ic{background:rgba(47,224,172,.16); color:var(--mint)}
+.b-blue .ic{background:rgba(76,155,255,.16); color:#7db4ff}
+.b-amber .ic{background:rgba(246,171,63,.16); color:var(--amber)}
+.progress-line{position:absolute; left:24px; right:24px; bottom:22px; height:2px; background:rgba(255,255,255,.08); border-radius:2px; z-index:6; overflow:hidden}
+.progress-line i{display:block; height:100%; width:var(--dp,0%); background:linear-gradient(90deg,var(--violet),var(--mint))}
 
-/* employee app mock */
-.phone-mock{max-width:300px; margin:0 auto; padding:22px; border-radius:28px; background:var(--panel); border:1px solid var(--line)}
-.photo-slot{flex:1; height:70px; border:1px dashed var(--line); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-mute)}
-
-/* contact */
-.contact-panel{padding:46px; display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center}
-@media (max-width:860px){ .contact-panel{grid-template-columns:1fr; padding:30px} }
-.field{background:var(--panel-2); border:1px solid var(--line); border-radius:9999px; padding:13px 20px; font-size:14px; font-family:inherit; color:#fff; width:100%}
-.field::placeholder{color:var(--text-mute)}
-.field:focus{outline:none; border-color:var(--violet)}
-
-footer{border-top:1px solid var(--line); padding:60px 0 34px}
-.foot-grid{display:grid; grid-template-columns:2fr repeat(3,1fr); gap:32px}
-@media (max-width:860px){ .foot-grid{grid-template-columns:1fr 1fr} }
-.foot-head{font-size:12px; color:var(--text-mute); margin-bottom:10px}
-.foot-grid a{display:block; font-size:14px; color:var(--text-dim); padding:6px 0}
-.foot-grid a:hover{color:#fff}
-
-/* ---------- modal ---------- */
-.modal-overlay{
-  position:fixed; inset:0; background:rgba(4,5,8,.75); backdrop-filter:blur(4px); z-index:3000;
-  display:flex; align-items:center; justify-content:center; padding:20px;
-  opacity:0; visibility:hidden; transition:opacity .2s ease; overflow-y:auto;
+/* =========================================================
+   SECTION 3 — фото ДО/ПОСЛЕ + контроль остановок
+   ========================================================= */
+.compare{
+  position:relative; border-radius:var(--r-xl); overflow:hidden; aspect-ratio:4/3; cursor:ew-resize; user-select:none;
+  background:#0a0c14;
 }
-.modal-overlay.open{opacity:1; visibility:visible}
-.modal-box{
-  background:var(--panel); border:1px solid var(--line); border-radius:24px; max-width:420px; width:100%;
-  padding:28px; position:relative; margin:auto; transform:translateY(8px); transition:transform .2s ease;
+.compare img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.compare .after{clip-path:inset(0 0 0 var(--cx,50%))}
+.compare .ph{position:absolute; inset:0; display:grid; place-items:center; color:var(--mute); font-size:13px; text-align:center; padding:24px}
+.compare .handle{position:absolute; top:0; bottom:0; left:var(--cx,50%); width:2px; background:linear-gradient(180deg,transparent,rgba(255,255,255,.9),transparent); z-index:3}
+.compare .handle::after{
+  content:'‹ ›'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:46px; height:46px; border-radius:50%;
+  background:rgba(11,13,22,.8); border:1px solid var(--hair); backdrop-filter:blur(10px); display:grid; place-items:center;
+  font-size:15px; color:#fff; letter-spacing:2px; box-shadow:0 16px 40px -18px #000;
 }
-.modal-overlay.open .modal-box{transform:translateY(0)}
-.modal-box.wide{max-width:460px}
-.modal-close{position:absolute; top:18px; right:18px; width:32px; height:32px; border-radius:50%; border:1px solid var(--line); background:transparent; color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:16px}
-.modal-close:hover{color:#fff}
-.tabs{display:flex; gap:6px; background:var(--panel-2); border-radius:9999px; padding:4px; margin-bottom:22px}
-.tab-btn{flex:1; padding:9px 0; border-radius:9999px; border:none; background:transparent; color:var(--text-dim); font-size:13.5px; font-weight:500}
-.tab-btn.active{background:linear-gradient(135deg,var(--violet),#6d3ff0); color:#fff}
-.field-label{font-size:12.5px; color:var(--text-mute); margin-bottom:6px; display:block}
-.field-group{margin-bottom:14px}
-.field.autofilled{border-color:var(--mint); box-shadow:0 0 0 3px rgba(47,224,172,.14)}
+.tagpic{position:absolute; z-index:4; top:14px; display:inline-flex; align-items:center; gap:7px; font-size:11.5px; padding:7px 12px; border-radius:9999px; background:rgba(5,6,8,.7); border:1px solid var(--hair); backdrop-filter:blur(10px)}
+.tagpic.l{left:14px} .tagpic.r{right:14px}
+.tick{width:16px; height:16px; border-radius:50%; background:var(--mint); color:#042019; display:grid; place-items:center; font-size:10px; box-shadow:0 0 14px rgba(47,224,172,.85)}
+.exif{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+.exif span{font-size:11.5px; color:var(--dim); background:var(--glass); border:1px solid var(--hair-2); padding:6px 11px; border-radius:9999px}
+.cmp-grid{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); gap:clamp(24px,3.5vw,48px); margin-top:clamp(36px,5vw,64px)}
+.meters{display:grid; gap:14px; min-width:0}
+.meter{padding:18px 20px; border-radius:var(--r-m); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid var(--hair)}
+.meter .top{display:flex; align-items:baseline; justify-content:space-between; gap:14px}
+.meter .lbl{font-size:13.5px; color:var(--dim)}
+.meter .val{font-family:'Space Grotesk',sans-serif; font-size:22px; color:#fff}
+.meter .bar{height:6px; border-radius:9999px; background:rgba(255,255,255,.07); margin-top:12px; overflow:hidden}
+.meter .bar i{display:block; height:100%; width:0; border-radius:9999px; background:linear-gradient(90deg,var(--violet),var(--mint)); transition:width 1.3s var(--ease-out)}
+.meter.in .bar i{width:var(--w,60%)}
+.alarm{position:relative; overflow:hidden; padding:22px 24px; border-radius:var(--r-l); border:1px solid rgba(246,171,63,.34); background:linear-gradient(180deg, rgba(28,20,10,.92), rgba(11,13,22,.92))}
+.alarm::before{content:''; position:absolute; inset:0; background:radial-gradient(ellipse 60% 90% at 0% 0%, rgba(246,171,63,.18), transparent 60%)}
+.alarm-head{position:relative; display:flex; align-items:center; gap:12px}
+.alarm-ic{width:40px; height:40px; border-radius:13px; background:rgba(246,171,63,.16); color:var(--amber); display:grid; place-items:center; font-size:18px; animation:halo 2.4s ease-in-out infinite}
+@keyframes halo{0%,100%{box-shadow:0 0 0 0 rgba(246,171,63,.35)}50%{box-shadow:0 0 0 10px rgba(246,171,63,0)}}
+.alarm-rows{position:relative; margin-top:16px; display:grid; gap:2px}
+.alarm-row{display:flex; justify-content:space-between; gap:16px; font-size:13.5px; color:var(--mute); padding:7px 0; border-top:1px solid var(--hair-2)}
+.alarm-row:first-child{border-top:none}
+.alarm-row b{color:#fff; font-weight:500}
+.thresholds{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; position:relative}
+.thresholds button{font-size:12.5px; padding:8px 14px; border-radius:9999px; border:1px solid var(--hair); color:var(--dim); transition:all .25s ease}
+.thresholds button.on{background:rgba(246,171,63,.16); border-color:rgba(246,171,63,.45); color:#ffd79a}
 
-/* demo access hint */
-.demo-hint{
-  display:block; width:100%; margin-top:16px; padding:14px 16px 16px; text-align:left;
-  background:linear-gradient(135deg, rgba(47,224,172,.08), rgba(139,92,246,.1));
-  border:1px dashed rgba(47,224,172,.42); border-radius:18px; color:var(--text-dim);
-  font-size:13.5px; line-height:1.5; transition:border-color .15s ease, background .15s ease, transform .15s ease;
-  -webkit-tap-highlight-color:transparent;
-}
-.demo-hint:hover{border-color:var(--mint); background:linear-gradient(135deg, rgba(47,224,172,.13), rgba(139,92,246,.14))}
-.demo-hint:active{transform:scale(.99)}
-.demo-hint .dh-title{display:flex; align-items:center; gap:8px; color:#fff; font-weight:600; font-size:14px; margin-bottom:8px}
-.demo-hint .dh-row{display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:4px 0; border-top:1px solid var(--line-soft)}
-.demo-hint .dh-row:first-of-type{border-top:none}
-.demo-hint .dh-row b{color:#fff; font-weight:500; font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:13.5px; letter-spacing:.01em; white-space:nowrap}
-.demo-hint .dh-fill{
-  display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; padding:10px 14px;
-  border-radius:9999px; background:var(--mint); color:#08281f; font-weight:600; font-size:13.5px;
-}
-.demo-hint:hover .dh-fill{filter:brightness(1.08)}
+/* =========================================================
+   SECTION 4 — интерактивный демо-виджет
+   ========================================================= */
+.demo-panel{position:relative; overflow:hidden; border-radius:var(--r-xl)}
+.tabs{display:flex; gap:4px; padding:8px; position:relative; border-bottom:1px solid var(--hair-2)}
+.tabs .pill{position:absolute; top:8px; bottom:8px; border-radius:9999px; background:linear-gradient(120deg, rgba(139,92,246,.3), rgba(47,224,172,.2)); border:1px solid var(--hair); transition:transform .55s var(--ease-spring), width .55s var(--ease-spring); z-index:0}
+.tabs button{position:relative; z-index:1; padding:11px 20px; border-radius:9999px; font-size:13.5px; color:var(--dim); transition:color .3s ease}
+.tabs button.on{color:#fff}
+.demo-stage{position:relative; min-height:clamp(340px,52vh,540px)}
+.pane{position:absolute; inset:0; padding:18px; opacity:0; transform:translateY(14px) scale(.995); pointer-events:none; transition:opacity .45s var(--ease-out), transform .55s var(--ease-out)}
+.pane.on{opacity:1; transform:none; pointer-events:auto}
+.pane-map{display:grid; grid-template-columns:1fr 230px; gap:14px; min-height:0}
+.mini-map{position:relative; border-radius:var(--r-m); overflow:hidden; border:1px solid var(--hair-2); background:#06070c}
+.mini-map canvas{width:100%; height:100%; display:block}
+.mini-list{display:flex; flex-direction:column; gap:4px; overflow:auto; max-height:100%}
+.trip-row{display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; padding:12px 14px; border-radius:14px; border:1px solid var(--hair-2); background:rgba(255,255,255,.02)}
+.trip-row + .trip-row{margin-top:8px}
+.bar-mini{width:84px; height:5px; border-radius:9999px; background:rgba(255,255,255,.08); overflow:hidden}
+.bar-mini i{display:block; height:100%; background:linear-gradient(90deg,var(--violet),var(--mint))}
+.tv-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+.tv-cell{padding:18px; border-radius:var(--r-m); border:1px solid var(--hair-2); background:rgba(255,255,255,.02)}
+.tv-cell .l{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
+.tv-cell .v{font-family:'Space Grotesk',sans-serif; font-size:clamp(28px,4vw,44px); color:#fff; margin-top:8px}
 
-/* ---------- умный ввод телефона (intl-tel-input + IMask) ---------- */
-.iti{width:100%; --iti-path-flags-1x:url(https://cdn.jsdelivr.net/npm/intl-tel-input@24/build/img/flags.webp); --iti-path-flags-2x:url(https://cdn.jsdelivr.net/npm/intl-tel-input@24/build/img/flags@2x.webp); --iti-path-globe-1x:url(https://cdn.jsdelivr.net/npm/intl-tel-input@24/build/img/globe.webp); --iti-path-globe-2x:url(https://cdn.jsdelivr.net/npm/intl-tel-input@24/build/img/globe@2x.webp)}
-.iti__selected-country, .iti__selected-flag{border-radius:9999px 0 0 9999px; padding-left:16px; background:transparent; transition:background .15s ease}
-.iti__selected-country:hover, .iti__selected-flag:hover, .iti__selected-country-primary:hover{background:rgba(255,255,255,.06)}
-.iti__selected-dial-code{color:var(--text-dim); font-size:14px}
-.iti__arrow{border-top-color:var(--text-mute)}
-.iti__dropdown-content, .iti__country-list{
-  background:var(--panel-2); border:1px solid var(--line); border-radius:16px; color:var(--text);
-  box-shadow:0 26px 60px -22px rgba(0,0,0,.9); overflow:hidden;
+/* =========================================================
+   SECTION 5 — CTA / форма / подвал
+   ========================================================= */
+.cta-card{padding:clamp(28px,4vw,54px); border-radius:var(--r-xl); display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(28px,4vw,56px); align-items:center}
+.field-l{display:block; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-bottom:8px}
+.field{
+  width:100%; padding:15px 20px; border-radius:16px; font-size:15px; color:#fff;
+  background:rgba(255,255,255,.04); border:1px solid var(--hair); outline:none;
+  transition:border-color .25s ease, box-shadow .25s ease, background .25s ease;
 }
-.iti__country-list{max-height:230px}
-.iti__search-input{background:rgba(255,255,255,.04); color:#fff; border:none; border-bottom:1px solid var(--line); padding:12px 16px; width:100%; font-family:inherit; font-size:14px; outline:none}
-.iti__search-input::placeholder{color:var(--text-mute)}
-.iti__country{color:var(--text-dim); padding:10px 16px; font-size:14px}
-.iti__country.iti__highlight, .iti__country:hover, .iti__active{background:rgba(139,92,246,.2); color:#fff}
-.iti__country-name{color:inherit}
-.iti__dial-code{color:var(--text-mute)}
-.iti__divider{border-bottom-color:var(--line)}
-input.field[type=tel]{letter-spacing:.02em}
-/* запасной вариант, если CDN недоступен: код страны всё равно подставлен */
+.field::placeholder{color:var(--mute)}
+.field:focus{border-color:rgba(139,92,246,.75); box-shadow:0 0 0 4px rgba(139,92,246,.16); background:rgba(255,255,255,.06)}
+.field-row{margin-bottom:16px}
+.choices{display:flex; gap:8px; flex-wrap:wrap}
+.choices button{padding:9px 15px; border-radius:9999px; border:1px solid var(--hair); font-size:13px; color:var(--dim); transition:all .25s ease}
+.choices button.on{background:rgba(139,92,246,.18); border-color:rgba(139,92,246,.5); color:#fff}
+.form-ok{
+  display:flex; align-items:center; gap:12px; margin-top:16px; padding:14px 16px; border-radius:16px;
+  background:rgba(47,224,172,.1); border:1px solid rgba(47,224,172,.3); color:var(--mint-soft); font-size:14px;
+  opacity:0; transform:translateY(10px); transition:opacity .5s var(--ease-out), transform .6s var(--ease-spring);
+}
+.form-ok.on{opacity:1; transform:none}
+.form-ok .tick{width:24px; height:24px; font-size:12px}
+.contact-list{display:flex; flex-direction:column; gap:12px; margin-top:26px; font-size:15px; color:var(--dim)}
+.contact-list a{display:inline-flex; align-items:center; gap:10px; transition:color .2s ease}
+.contact-list a:hover{color:#fff}
+footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relative; z-index:2}
+.foot{display:grid; grid-template-columns:2fr repeat(3,1fr); gap:32px}
+.foot h4{font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute); margin-bottom:12px; font-family:'Inter',sans-serif; font-weight:500}
+.foot a{display:block; font-size:14px; color:var(--dim); padding:6px 0; transition:color .2s ease}
+.foot a:hover{color:#fff}
+.copyright{margin-top:36px; padding-top:22px; border-top:1px solid var(--hair-2); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--mute)}
+
+/* ---------- телефон с флагом ---------- */
+.iti{width:100%}
+.iti__selected-country, .iti__selected-flag{border-radius:16px 0 0 16px; padding-left:18px; background:transparent}
+.iti__selected-country:hover, .iti__selected-country-primary:hover, .iti__selected-flag:hover{background:rgba(255,255,255,.06)}
+.iti__selected-dial-code{color:var(--dim)}
+.iti__dropdown-content, .iti__country-list{background:#0d101a; border:1px solid var(--hair); border-radius:18px; color:var(--text); overflow:hidden; box-shadow:var(--shadow-lg)}
+.iti__search-input{background:rgba(255,255,255,.04); border:none; border-bottom:1px solid var(--hair); padding:13px 16px; width:100%; color:#fff; font-family:inherit; outline:none}
+.iti__country{padding:10px 16px; color:var(--dim); font-size:14px}
+.iti__country.iti__highlight, .iti__country:hover, .iti__active{background:rgba(139,92,246,.22); color:#fff}
+.iti__dial-code{color:var(--mute)}
 .phone-fallback{position:relative}
-.phone-fallback .pf-code{position:absolute; left:20px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--text-dim); pointer-events:none}
-.phone-fallback input.field{padding-left:52px}
+.phone-fallback .pf-code{position:absolute; left:20px; top:50%; transform:translateY(-50%); color:var(--dim); pointer-events:none}
+.phone-fallback .field{padding-left:54px}
 
-/* driver cabinet */
-.task-box{background:var(--panel-2); border:1px solid var(--line-soft); border-radius:16px; padding:16px; margin-bottom:16px}
-.task-box .t1{font-size:13px; font-weight:500; color:#fff}
-.task-box .t2{font-size:12px; color:var(--text-mute); margin-top:4px}
-.photo-pair{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-.photo-box{border:1px dashed var(--line); border-radius:16px; padding:12px; text-align:center; cursor:pointer; transition:border-color .15s ease; position:relative}
-.photo-box:hover{border-color:var(--violet-soft)}
-.photo-box.done{border-style:solid; border-color:var(--mint)}
-.photo-box .ph-label{font-size:12px; color:var(--text-dim); font-weight:500; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:6px}
-.photo-box .ph-check{display:none; width:16px; height:16px; border-radius:50%; background:var(--mint); color:#08281f; font-size:10px; align-items:center; justify-content:center; flex-shrink:0}
-.photo-box.done .ph-check{display:flex}
-.photo-box img{border-radius:10px; width:100%; height:90px; object-fit:cover; margin-bottom:8px}
-.photo-box .ph-placeholder{height:90px; display:flex; align-items:center; justify-content:center; color:var(--text-mute); font-size:22px; border-radius:10px; background:rgba(255,255,255,.02); margin-bottom:8px}
-.photo-box .meta{font-size:10.5px; color:var(--text-mute); line-height:1.5; text-align:left}
-.photo-box .meta b{color:var(--mint); font-weight:500}
-#finish-task[disabled]{opacity:.4; cursor:not-allowed; filter:none}
-#finish-task[disabled]:hover{filter:none}
+/* =========================================================
+   Адаптив
+   ========================================================= */
+@media (max-width:1100px){
+  .d-body{grid-template-columns:1fr 200px}
+  .disp-grid{grid-template-columns:1fr; align-content:center; gap:22px; padding-top:88px}
+  .disp-steps{gap:0}
+  .step{display:none; opacity:1; transform:none}
+  .step.on{display:block}
+  .stage-frame{max-height:42svh}
+  .cmp-grid{grid-template-columns:1fr}
+  .cta-card{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .d-stats{grid-template-columns:repeat(2,1fr)}
+  .d-body{grid-template-columns:1fr}
+  .d-side{display:none}
+  .pane-map{grid-template-columns:1fr; grid-template-rows:200px 1fr}
+  .tv-grid{grid-template-columns:repeat(2,1fr)}
+  .foot{grid-template-columns:1fr 1fr}
+  #hero{height:240vh}
+  #dispatching{height:300vh}
+  .badge{padding:8px 11px; border-radius:13px; max-width:min(250px,72%)}
+  .badge .t2{display:none}
+  .badge .t1{font-size:12px; white-space:normal}
+}
+@media (max-width:560px){
+  .wrap{padding-inline:18px}
+  .hero-actions{margin-top:26px}
+  .hero-actions .btn{width:100%; padding:13px 22px}
+  .hero-copy .lead{margin-top:18px; font-size:15.5px}
+  .hero-copy h1{margin-top:18px}
+  .kpis{display:grid; grid-template-columns:1fr 1fr; gap:14px 24px; margin-top:30px}
+  .scroll-cue{display:none}
+  .tabs{overflow-x:auto}
+  .compare{aspect-ratio:3/4}
+}
+
+/* ---------- уважение к prefers-reduced-motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .ambient i, .chip-live i, .alarm-ic, .scroll-cue i::after{animation:none !important}
+  .reveal{opacity:1 !important; transform:none !important; transition:none !important}
+  .badge{opacity:1 !important; transform:none !important; transition:none !important}
+  .btn:hover{transform:none}
+  .hero-copy{filter:none !important}
+}
 </style>
 </head>
 <body>
 
-<div class="aurora" aria-hidden="true">
-  <div class="mesh"></div>
-  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-  <div class="blob b4"></div><div class="blob b5"></div>
-  <div class="grid"></div>
-  <div class="spot"></div>
-  <div class="noise"></div>
-  <div class="vignette"></div>
-</div>
+<div class="ambient" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="progress" aria-hidden="true"><i id="sp"></i></div>
 
-<!-- Header -->
-<header>
-  <div class="header-inner">
-    <a href="#top" class="brand">
-      <span class="mark">366</span>
-      <span class="name">TECH FLEET</span>
-    </a>
+<!-- ============ HEADER ============ -->
+<header id="hdr">
+  <div class="nav">
+    <a href="#top" class="brand"><span class="mark">366</span><b>TECH FLEET</b></a>
     <nav class="nav-links">
-      <a href="#platform">Платформа</a>
-      <a href="#modes">GPS-режимы</a>
-      <a href="#app">Приложение</a>
-      <a href="#control">Диспетчерская</a>
-      <a href="#industries">Отрасли</a>
+      <a href="#dispatching">Диспетчеризация</a>
+      <a href="#control">Фотоконтроль</a>
+      <a href="#demo">Демо</a>
+      <a href="#cta">Контакты</a>
     </nav>
-    <div class="header-actions">
-      <a class="btn btn-primary btn-sm header-desktop-cta" href="#contact">Запросить демо</a>
-      <button class="btn btn-outline btn-sm" id="login-btn" type="button">Войти</button>
-      <button class="burger" id="burger-btn" type="button" aria-label="Открыть меню" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
+    <div class="nav-cta">
+      <a class="btn btn-glass btn-sm btn-desktop" href="platform.html">Смотреть платформу</a>
+      <a class="btn btn-primary btn-sm" href="#cta">Запросить демо</a>
+      <button class="burger" id="burger" type="button" aria-label="Меню" aria-expanded="false"><span></span><span></span><span></span></button>
     </div>
   </div>
-  <div class="mobile-drawer" id="mobile-drawer">
-    <div class="mobile-drawer-inner">
-      <a href="#platform">Платформа</a>
-      <a href="#modes">GPS-режимы</a>
-      <a href="#app">Приложение</a>
-      <a href="#control">Диспетчерская</a>
-      <a href="#industries">Отрасли</a>
-      <a href="#contact" style="color:var(--violet-soft); font-weight:600;">Запросить демо</a>
+  <div class="drawer" id="drawer">
+    <div class="drawer-in">
+      <a href="#dispatching">Диспетчеризация</a>
+      <a href="#control">Фотоконтроль</a>
+      <a href="#demo">Демо</a>
+      <a href="platform.html">Смотреть платформу</a>
+      <a href="#cta" style="color:var(--violet-soft); font-weight:600">Запросить демо</a>
     </div>
   </div>
 </header>
 
-<!-- Hero -->
-<div id="top"></div>
-<section class="hero">
-  <div class="wrap">
-    <a class="chip" href="#modes">
-      <span class="tag">Новое</span>
-      <span>GPS-мониторинг без физического датчика</span>
-    </a>
-    <h1>Работа в поле.<br><em>Под полным контролем.</em></h1>
-    <p class="lead">Маршруты, задания, фотоотчётность и геолокация — в одной системе для диспетчера
-      и выездного сотрудника. Источник координат — GPS-датчик или просто телефон.</p>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="#contact">Запросить демо</a>
-      <a class="btn btn-ghost" href="platform.html" target="_blank" rel="noopener">Смотреть платформу</a>
-    </div>
-    <div class="stat-strip">
-      <div class="stat"><div class="num">48</div><div class="lbl">машин на связи</div></div>
-      <div class="stat"><div class="num">1 284</div><div class="lbl">рейсов в этом месяце</div></div>
-      <div class="stat"><div class="num">18 мин</div><div class="lbl">среднее время простоя</div></div>
-      <div class="stat"><div class="num">99.4%</div><div class="lbl">аптайм платформы</div></div>
-    </div>
-  </div>
-</section>
+<main id="top">
 
-<!-- Feature intro -->
-<section id="platform">
-  <div class="wrap">
-    <div class="section-head center">
-      <div class="eyebrow" style="justify-content:center">Один бэкенд, два источника координат</div>
-      <h2>Диспетчеру не важно, откуда пришли данные</h2>
-    </div>
-    <div class="grid3">
-      <div class="card-sm">
-        <div class="step-num" style="background:var(--violet);">01</div>
-        <h3 style="font-size:17px; margin:16px 0 8px;">GPS-датчик на транспорт</h3>
-        <p style="color:var(--text-dim); font-size:14.5px; line-height:1.6;">Классический мониторинг: маршрут, стоянки, пробег, расход топлива.</p>
+  <!-- ============================================================
+       SECTION 1 — HERO
+       ============================================================ -->
+  <section class="scene" id="hero">
+    <div class="scene__stage">
+      <div class="hero-media" id="hero-media">
+        <canvas id="city" aria-hidden="true"></canvas>
+        <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata" aria-hidden="true"></video>
       </div>
-      <div class="card-sm">
-        <div class="step-num" style="background:var(--mint);">02</div>
-        <h3 style="font-size:17px; margin:16px 0 8px;">Телефон сотрудника</h3>
-        <p style="color:var(--text-dim); font-size:14.5px; line-height:1.6;">Датчик не нужен — приложение само передаёт координаты в фоне.</p>
-      </div>
-      <div class="card-sm">
-        <div class="step-num" style="background:var(--red);">03</div>
-        <h3 style="font-size:17px; margin:16px 0 8px;">Единая панель</h3>
-        <p style="color:var(--text-dim); font-size:14.5px; line-height:1.6;">Обе схемы сходятся в одной карте и одной таблице событий.</p>
-      </div>
-    </div>
-  </div>
-</section>
+      <div class="hero-scrim" aria-hidden="true"></div>
 
-<!-- GPS modes comparison -->
-<section id="modes">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">Гибкое подключение</div>
-      <h2>GPS-датчик не обязателен</h2>
-      <p>Нужен полный контроль транспорта — ставим GPS-трекер. Установка нецелесообразна —
-        сотрудник просто скачивает приложение, и его смартфон становится источником геолокации.</p>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Тип бизнеса</th><th>GPS-датчик</th><th>Приложение на телефоне</th></tr></thead>
-        <tbody>
-          <tr><td>Автопарк</td><td><span class="pill-tag pill-violet">Рекомендуется</span></td><td><span class="pill-tag pill-mint">Можно</span></td></tr>
-          <tr><td>Курьеры</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
-          <tr><td>Вывоз отходов</td><td><span class="pill-tag pill-violet">Рекомендуется</span></td><td><span class="pill-tag pill-mint">Можно</span></td></tr>
-          <tr><td>Выездные сотрудники</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
-          <tr><td>Сервисные службы</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
-          <tr><td>Доставка</td><td><span class="pill-tag pill-mint">Не обязателен</span></td><td><span class="pill-tag pill-violet">Основной вариант</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+      <div class="hero-copy" id="hero-copy">
+        <span class="eyebrow">366TECH FLEET · Алматы</span>
+        <h1 class="display">Контролируйте каждое<br>движение автопарка.<br><span class="grad">В реальном времени.</span></h1>
+        <p class="lead">GPS-трекер на машине или просто смартфон сотрудника — координаты, маршруты,
+          фотоотчёты и нарушения приходят в одну панель диспетчера.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="platform.html">Открыть платформу</a>
+          <a class="btn btn-glass" href="#dispatching">Как это работает</a>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="v">48</div><div class="l">машин на связи</div></div>
+          <div class="kpi"><div class="v">1 284</div><div class="l">рейса за месяц</div></div>
+          <div class="kpi"><div class="v">18 мин</div><div class="l">средний простой</div></div>
+          <div class="kpi"><div class="v">99.4%</div><div class="l">аптайм платформы</div></div>
+        </div>
+      </div>
 
-<!-- Employee app -->
-<section id="app">
-  <div class="wrap grid2">
-    <div>
-      <div class="eyebrow">Приложение сотрудника</div>
-      <h2 style="margin-top:10px; margin-bottom:26px;">От задания до фотоотчёта — четыре шага</h2>
-      <div style="display:flex; flex-direction:column; gap:20px;">
-        <div style="display:flex; gap:14px;">
-          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">1</div>
-          <div><div style="font-weight:500; color:#fff;">Получает задание</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Адрес, тип работы, временное окно.</div></div>
-        </div>
-        <div style="display:flex; gap:14px;">
-          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">2</div>
-          <div><div style="font-weight:500; color:#fff;">Едет по маршруту</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Система фиксирует выезд, прибытие, время в пути.</div></div>
-        </div>
-        <div style="display:flex; gap:14px;">
-          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">3</div>
-          <div><div style="font-weight:500; color:#fff;">Снимает фото до / после</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Снимок автоматически привязан к координатам и времени.</div></div>
-        </div>
-        <div style="display:flex; gap:14px;">
-          <div class="step-num" style="width:28px;height:28px;font-size:12px;background:var(--violet);">4</div>
-          <div><div style="font-weight:500; color:#fff;">Завершает задание</div><div style="color:var(--text-dim); font-size:14px; margin-top:2px;">Диспетчер сразу видит: где, когда, кто, что сделал.</div></div>
+      <!-- панель диспетчера, в которую «влетает» камера -->
+      <div class="dispatch" id="dispatch">
+        <div class="dispatch-in glass">
+          <div class="d-bar">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span class="t">366TECH FLEET · Панель диспетчера</span>
+            <span class="chip-live"><i></i>Система онлайн</span>
+          </div>
+          <div class="d-stats">
+            <div class="d-stat"><div class="l">Всего ТС</div><div class="v">48</div><div class="s">+3 за месяц</div></div>
+            <div class="d-stat"><div class="l">На линии</div><div class="v">42</div><div class="s">88% парка</div></div>
+            <div class="d-stat"><div class="l">В движении</div><div class="v" id="k-moving">29</div><div class="s">69% на линии</div></div>
+            <div class="d-stat"><div class="l">Стоят</div><div class="v">13</div><div class="s" style="color:var(--amber)">1 требует внимания</div></div>
+          </div>
+          <div class="d-body">
+            <div class="d-map"><canvas id="hero-map"></canvas></div>
+            <div class="d-side" id="hero-side"></div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="phone-mock">
-      <div class="foot-head">Сегодня</div>
-      <div style="font-size:21px; font-weight:600; color:#fff; margin-top:4px;">6 заданий</div>
-      <span class="pill-tag pill-mint" style="margin-top:8px; display:inline-block;">3 выполнено</span>
-      <div class="task-box" style="margin-top:16px;">
-        <div class="t1">Задание №1254</div>
-        <div class="t2">Заказной вывоз · Медеуский р-н · 14:00–15:00</div>
-      </div>
-      <div style="background:linear-gradient(135deg,var(--violet),#6d3ff0); border-radius:16px; padding:14px; margin-top:6px;">
-        <div style="font-size:13px; font-weight:600; color:#fff;">Маршрут открыт</div>
-        <div style="font-size:12px; color:#fff; opacity:.85; margin-top:2px;">3 точки · 6,4 км</div>
-      </div>
-      <div class="photo-pair" style="margin-top:12px;">
-        <div class="photo-box" id="box-before" onclick="document.getElementById('input-before').click()">
-          <div class="ph-label"><span class="ph-check">✓</span>Фото «До»</div>
-          <div class="ph-placeholder" id="placeholder-before">📷</div>
-          <div class="meta" id="meta-before">Нажмите, чтобы снять</div>
-        </div>
-        <div class="photo-box" id="box-after" onclick="document.getElementById('input-after').click()">
-          <div class="ph-label"><span class="ph-check">✓</span>Фото «После»</div>
-          <div class="ph-placeholder" id="placeholder-after">📷</div>
-          <div class="meta" id="meta-after">Нажмите, чтобы снять</div>
-        </div>
-      </div>
-      <input type="file" accept="image/*" capture="environment" id="input-before" style="display:none;" onchange="capturePhoto(this,'before')">
-      <input type="file" accept="image/*" capture="environment" id="input-after" style="display:none;" onchange="capturePhoto(this,'after')">
-      <button class="btn btn-mint btn-block" style="margin-top:14px;" type="button" id="finish-task" disabled onclick="finishTask()">Завершить задание</button>
-      <div id="driver-status" style="font-size:12.5px; color:var(--mint); text-align:center; margin-top:8px; min-height:15px;"></div>
-    </div>
-  </div>
-</section>
 
-<!-- Dispatcher control / MAP -->
-<section id="control">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">Панель диспетчера</div>
-      <h2>Видеть всё. Реагировать сразу.</h2>
-      <p>Карта, рейсы, события и отчётность — в одном рабочем пространстве. Кликните по машине,
-        чтобы увидеть водителя, скорость, статус и адрес.</p>
+      <div class="scroll-cue" id="cue"><span>Листайте</span><i></i></div>
     </div>
-    <div class="map-shell">
-      <div class="map-top">
-        <span class="eyebrow" style="margin:0;">366TECH FLEET · Карта</span>
-        <span class="live-dot"><span class="d"></span>Система онлайн</span>
-      </div>
-      <div id="fleet-map"></div>
-      <div class="map-side" id="veh-list"></div>
-      <div class="legend">
-        <span><i style="background:var(--mint);"></i>В движении</span>
-        <span><i style="background:var(--amber);"></i>Стоит</span>
-        <span><i style="background:#5a5f73;"></i>Оффлайн</span>
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- Stop control module -->
-<section>
-  <div class="wrap grid2">
-    <div>
-      <div class="eyebrow">Модуль контроля остановок</div>
-      <h2 style="margin-top:10px; margin-bottom:16px;">Система сама находит проблему</h2>
-      <p style="color:var(--text-dim); line-height:1.6; margin-bottom:24px; font-size:15px;">
-        При отсутствии движения дольше заданного порога система создаёт событие и
-        отправляет push-уведомление диспетчеру. Пороги настраиваются в компании.</p>
-      <div style="display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--text-dim);">
-        <div style="display:flex; align-items:center; gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--amber); display:inline-block;"></span>20 минут — предупреждение</div>
-        <div style="display:flex; align-items:center; gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:#ff8a3d; display:inline-block;"></span>30 минут — критическая остановка</div>
-        <div style="display:flex; align-items:center; gap:10px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--red); display:inline-block;"></span>60 минут — серьёзное нарушение</div>
-      </div>
-      <p style="color:var(--text-mute); font-size:13px; margin-top:20px; line-height:1.6;">
-        Остановка в геозоне назначенного объекта считается рабочим временем и не создаёт
-        нарушение — система различает «прибыл на объект» и «встал вне маршрута».</p>
-    </div>
-    <div class="panel alert-card">
-      <div class="alert-head">
-        <div class="alert-icon">!</div>
+  <!-- ============================================================
+       SECTION 2 — LIVE DISPATCHING
+       ============================================================ -->
+  <section class="scene" id="dispatching">
+    <div class="scene__stage">
+      <div class="disp-grid">
         <div>
-          <div style="font-weight:600; color:#fff;">Длительная остановка</div>
-          <div style="font-size:12px; color:var(--text-mute);">Обновлено сейчас</div>
+          <span class="eyebrow">Живая диспетчеризация</span>
+          <h2 class="h2" style="margin-top:18px">Два источника<br>координат.<br><span class="grad">Один экран.</span></h2>
+          <div class="disp-steps" style="margin-top:30px">
+            <article class="step on" data-step="0">
+              <span class="n">01</span>
+              <h3>GPS-трекер на транспорте</h3>
+              <p>Координаты каждые 15 секунд: маршрут, пробег, стоянки, время в пути и история рейса.</p>
+            </article>
+            <article class="step" data-step="1">
+              <span class="n">02</span>
+              <h3>Смартфон сотрудника</h3>
+              <p>Датчик не нужен: приложение отдаёт геолокацию в фоне — для курьеров и выездных специалистов.</p>
+            </article>
+            <article class="step" data-step="2">
+              <span class="n">03</span>
+              <h3>Единый бэкенд</h3>
+              <p>Диспетчеру не важно, откуда пришли данные: карта, маршруты, события и отчёты общие.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="stage-frame glass" id="disp-frame">
+          <canvas id="road" aria-hidden="true"></canvas>
+          <video id="disp-video" muted loop playsinline preload="metadata" aria-hidden="true"></video>
+          <div class="frame-scrim"></div>
+
+          <div class="badge b-violet" data-at="0.08" style="top:9%; left:6%">
+            <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span>
+            <span><span class="t1">GPS-трекер · 15 сек</span><span class="t2">702 AB 02 · Арман К.</span></span>
+          </div>
+          <div class="badge b-mint" data-at="0.3" style="top:26%; right:6%">
+            <span class="ic"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
+            <span><span class="t1">Смартфон · фоновый режим</span><span class="t2">204 EA 02 · Асель Н.</span></span>
+          </div>
+          <div class="badge b-blue" data-at="0.5" style="bottom:30%; left:8%">
+            <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 12h4l2-6 4 12 2-6h4"/></svg></span>
+            <span><span class="t1">46 км/ч · в движении</span><span class="t2">Жибек Жолы / Зенкова</span></span>
+          </div>
+          <div class="badge b-amber" data-at="0.68" style="bottom:16%; right:8%">
+            <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+            <span><span class="t1">Задание №1612 · трек сохранён</span><span class="t2">9 точек · 12,4 км</span></span>
+          </div>
+
+          <div class="progress-line"><i id="dp"></i></div>
         </div>
       </div>
-      <div class="alert-body">
-        <div class="alert-row"><span>Машина</span><span style="color:#fff;">№15 · 366 BX 02</span></div>
-        <div class="alert-row"><span>Стоянка</span><span style="color:#fff;">28 минут</span></div>
-        <div class="alert-row"><span>Адрес</span><span style="color:#fff;">ул. Ауэзова, 106</span></div>
-        <div class="alert-row"><span>Задание</span><span style="color:#fff;">№1548</span></div>
-        <div class="alert-row"><span>Статус</span><span style="color:#ff8a3d;">Вне маршрута</span></div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 3 — ФОТОКОНТРОЛЬ И ОСТАНОВКИ
+       ============================================================ -->
+  <section class="section" id="control">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Доказательство работы</span>
+        <h2 class="h2">Фото ДО и ПОСЛЕ.<br><span class="grad">С координатами и временем.</span></h2>
+        <p class="lead">Нельзя просто сказать «я там был и всё сделал». Снимок привязан к точке, времени,
+          сотруднику и номеру задания — отчёт формируется сам.</p>
       </div>
-      <a href="#control" class="alert-foot"><span style="color:var(--text-mute);">Открыть на карте</span><span style="color:var(--violet-soft);">Перейти →</span></a>
-    </div>
-  </div>
-</section>
 
-<!-- Industries -->
-<section id="industries">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">Отраслевые решения</div>
-      <h2>Одна платформа. Любой развозной бизнес.</h2>
-    </div>
-    <div class="ind-grid">
-      <article class="ind-card">
-        <div class="ind-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M10 11v6M14 11v6"/></svg></div>
-        <div class="ind-body"><h3>Вывоз отходов</h3><p>Постоянные маршруты по графику, контроль точек, фотофиксация.</p></div>
-      </article>
-      <article class="ind-card">
-        <div class="ind-icon mint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5s6 6.4 6 10.8a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/></svg></div>
-        <div class="ind-body"><h3>Доставка воды и продукции</h3><p>Рейсы, точное время прибытия, отчётность по заказу.</p></div>
-      </article>
-      <article class="ind-card">
-        <div class="ind-icon rose"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
-        <div class="ind-body"><h3>Курьеры</h3><p>Работа без GPS-датчика — только приложение на телефоне.</p></div>
-      </article>
-      <article class="ind-card">
-        <div class="ind-icon mint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-        <div class="ind-body"><h3>Выездные сотрудники</h3><p>Маршрут до объекта, подтверждение фото и геометкой.</p></div>
-      </article>
-      <article class="ind-card">
-        <div class="ind-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3.5 17.5a2.1 2.1 0 0 0 3 3l5.8-5.8a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6z"/></svg></div>
-        <div class="ind-body"><h3>Сервисные службы</h3><p>Выезд специалиста, контроль времени, история визитов.</p></div>
-      </article>
-      <article class="ind-card">
-        <div class="ind-icon rose"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 17V6h11.5v11"/><path d="M14 9.5h3.8l3.7 3.8V17h-1.6"/><path d="M8.6 17h7.8"/><path d="M2.5 17h1.5"/><circle cx="6.3" cy="17.2" r="2"/><circle cx="18.2" cy="17.2" r="2"/></svg></div>
-        <div class="ind-body"><h3>Автопарк</h3><p>Классический GPS-мониторинг: маршрут, стоянки, пробег.</p></div>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- CTA / Contact -->
-<section id="contact">
-  <div class="wrap">
-    <div class="panel contact-panel">
-      <div>
-        <div class="eyebrow">Готовы увидеть больше?</div>
-        <h2 style="margin-top:10px; margin-bottom:20px; font-size:30px;">Покажем платформу на данных вашего автопарка.</h2>
-        <div style="display:flex; flex-direction:column; gap:12px; font-size:14px; color:var(--text-dim);">
-          <a href="tel:+77789990203">📞 +7 (778) 999-02-03</a>
-          <a href="mailto:366media@mail.ru">✉️ 366media@mail.ru</a>
-          <span>📍 г. Алматы, Казахстан</span>
+      <div class="cmp-grid">
+        <div class="reveal">
+          <div class="compare glass" id="compare" style="padding:0">
+            <img class="before" id="img-before" alt="Фото объекта до выполнения задания">
+            <img class="after"  id="img-after"  alt="Фото объекта после выполнения задания">
+            <div class="ph" id="cmp-ph">Кадры ДО / ПОСЛЕ подставятся сюда<br>(media.photoBefore / media.photoAfter)</div>
+            <span class="tagpic l"><span class="tick">✓</span>Фото ДО · 14:09</span>
+            <span class="tagpic r"><span class="tick">✓</span>Фото ПОСЛЕ · 14:24</span>
+            <div class="handle" aria-hidden="true"></div>
+          </div>
+          <div class="exif">
+            <span>📍 43.2337, 76.8721</span><span>🕐 12.09, 14:09 → 14:24</span>
+            <span>👷 Ерлан Т.</span><span>🚚 366 BX 02</span><span>🗂 Задание №1548</span>
+          </div>
         </div>
-        <a href="https://wa.me/77789990203" target="_blank" rel="noopener" class="btn btn-mint" style="margin-top:22px;">Написать в WhatsApp</a>
-      </div>
-      <form id="demo-form" style="display:flex; flex-direction:column; gap:14px;" onsubmit="event.preventDefault(); document.getElementById('form-status').textContent='Спасибо! Мы свяжемся с вами в ближайшее время.'; this.reset();">
-        <input class="field" type="text" required placeholder="Ваше имя">
-        <input class="field" id="demo-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel">
-        <button type="submit" class="btn btn-primary btn-block">Запросить демо</button>
-        <div id="form-status" style="font-size:13px; color:var(--mint); text-align:center; min-height:16px;"></div>
-      </form>
-    </div>
-  </div>
-</section>
 
-<!-- Footer -->
+        <div class="meters">
+          <div class="meter reveal" data-meter style="--w:98.6%">
+            <div class="top"><span class="lbl">Заданий с полным фотоотчётом</span><span class="val">98.6%</span></div>
+            <div class="bar"><i></i></div>
+          </div>
+          <div class="meter reveal" data-d="1" data-meter style="--w:92%">
+            <div class="top"><span class="lbl">Подтверждённая геолокация</span><span class="val">1 284</span></div>
+            <div class="bar"><i></i></div>
+          </div>
+          <div class="meter reveal" data-d="2" data-meter style="--w:24%">
+            <div class="top"><span class="lbl">Нарушений за неделю</span><span class="val">9</span></div>
+            <div class="bar"><i></i></div>
+          </div>
+
+          <div class="alarm reveal" data-d="3">
+            <div class="alarm-head">
+              <span class="alarm-ic">⚠️</span>
+              <span><span style="display:block; font-weight:600; color:#fff">Длительная остановка</span>
+                    <span class="muted">Модуль контроля остановок · порог <b id="th-label" style="color:#ffd79a">20</b> мин</span></span>
+            </div>
+            <div class="alarm-rows">
+              <div class="alarm-row"><span>Машина</span><b>№15 · 366 BX 02</b></div>
+              <div class="alarm-row"><span>Стоянка</span><b class="mono" id="stop-timer" style="color:var(--amber)">28:14</b></div>
+              <div class="alarm-row"><span>Адрес</span><b>ул. Ауэзова, 106</b></div>
+              <div class="alarm-row"><span>Задание</span><b>№1548</b></div>
+              <div class="alarm-row"><span>Статус</span><b style="color:#ff8a3d">Вне запланированного объекта</b></div>
+            </div>
+            <div class="thresholds" id="thresholds">
+              <button type="button" class="on" data-th="20">🟡 20 минут</button>
+              <button type="button" data-th="30">🟠 30 минут</button>
+              <button type="button" data-th="60">🔴 60 минут</button>
+            </div>
+            <p class="muted" style="margin-top:14px; position:relative">В геозоне назначенного объекта остановка считается рабочим временем и нарушение не создаётся.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 4 — ЖИВОЕ ДЕМО
+       ============================================================ -->
+  <section class="section" id="demo" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head reveal" style="max-width:820px">
+        <span class="eyebrow">Живое демо</span>
+        <h2 class="h2">Панель диспетчера —<br><span class="grad">прямо здесь.</span></h2>
+        <p class="lead">Переключайте режимы, как это делает диспетчер: карта смены, список рейсов и ТВ-режим для экрана в офисе.</p>
+      </div>
+
+      <div class="demo-panel glass reveal" data-d="1" style="margin-top:clamp(28px,4vw,48px)">
+        <div class="tabs" id="tabs">
+          <span class="pill" id="pill"></span>
+          <button type="button" class="on" data-pane="map">Карта диспетчера</button>
+          <button type="button" data-pane="trips">Рейсы</button>
+          <button type="button" data-pane="tv">ТВ-режим</button>
+        </div>
+        <div class="demo-stage">
+          <div class="pane on" data-pane="map">
+            <div class="pane-map" style="height:100%">
+              <div class="mini-map"><canvas id="mini-map"></canvas></div>
+              <div class="mini-list" id="mini-list"></div>
+            </div>
+          </div>
+          <div class="pane" data-pane="trips">
+            <div id="trip-list" style="height:100%; overflow:auto"></div>
+          </div>
+          <div class="pane" data-pane="tv">
+            <div class="tv-grid">
+              <div class="tv-cell"><div class="l">Всего ТС</div><div class="v">48</div></div>
+              <div class="tv-cell"><div class="l">На линии</div><div class="v">42</div></div>
+              <div class="tv-cell"><div class="l">В движении</div><div class="v" id="tv-moving">29</div></div>
+              <div class="tv-cell"><div class="l">Нарушений</div><div class="v" style="color:var(--amber)">1</div></div>
+            </div>
+            <div style="margin-top:14px; display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px">
+              <div class="trip-row"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--red)"></span>
+                <span><span style="color:#fff; font-size:13px">366 BX 02 · Ерлан Т.</span><br><span class="muted">28 минут вне объекта</span></span>
+                <span style="color:var(--red); font-size:12px">Нарушение</span></div>
+              <div class="trip-row"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--grey,#5a5f73)"></span>
+                <span><span style="color:#fff; font-size:13px">910 KM 02 · Марат Ж.</span><br><span class="muted">нет координат 14 минут</span></span>
+                <span class="muted" style="font-size:12px">Офлайн</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:14px; justify-content:center; margin-top:28px; flex-wrap:wrap" class="reveal" data-d="2">
+        <a class="btn btn-primary" href="platform.html">Открыть полную панель</a>
+        <a class="btn btn-glass" href="#cta">Запросить доступ</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 5 — CTA
+       ============================================================ -->
+  <section class="section" id="cta" style="padding-top:0">
+    <div class="wrap">
+      <div class="cta-card glass reveal">
+        <div>
+          <span class="eyebrow">Готовы увидеть больше?</span>
+          <h2 class="h2" style="margin-top:18px; font-size:clamp(28px,3.4vw,46px)">Покажем платформу<br>на данных вашего<br><span class="grad">автопарка.</span></h2>
+          <p class="lead" style="margin-top:20px">30 минут демо: заведём ваши машины и маршруты, включим фотоотчётность и пороги остановок.</p>
+          <div class="contact-list">
+            <a href="tel:+77789990203">📞 +7 (778) 999-02-03</a>
+            <a href="mailto:366media@mail.ru">✉️ 366media@mail.ru</a>
+            <span>📍 г. Алматы, Казахстан</span>
+          </div>
+        </div>
+
+        <form id="lead-form" novalidate>
+          <div class="field-row">
+            <label class="field-l" for="f-name">Как к вам обращаться</label>
+            <input class="field" id="f-name" name="name" type="text" required placeholder="Имя и компания">
+          </div>
+          <div class="field-row">
+            <label class="field-l" for="f-phone">Телефон</label>
+            <input class="field" id="f-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel">
+          </div>
+          <div class="field-row">
+            <label class="field-l">Тип бизнеса</label>
+            <div class="choices" id="biz">
+              <button type="button" class="on" data-biz="Вывоз отходов">Вывоз отходов</button>
+              <button type="button" data-biz="Доставка">Доставка</button>
+              <button type="button" data-biz="Курьеры">Курьеры</button>
+              <button type="button" data-biz="Сервис">Сервисные службы</button>
+              <button type="button" data-biz="Автопарк">Автопарк</button>
+            </div>
+          </div>
+          <button class="btn btn-mint" type="submit" style="width:100%; margin-top:8px">Запросить демо</button>
+          <div class="form-ok" id="form-ok"><span class="tick">✓</span><span id="form-ok-text">Заявка принята — перезвоним в течение рабочего дня.</span></div>
+          <p class="muted" style="margin-top:14px">Нажимая кнопку, вы соглашаетесь на обработку контактных данных.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
 <footer>
-  <div class="wrap foot-grid">
-    <div>
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-        <span class="mark" style="width:28px;height:28px;font-size:10px;">366</span>
-        <span style="font-weight:600; font-size:14px; color:#fff;">TECH FLEET</span>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand" style="margin-bottom:14px"><span class="mark">366</span><b>TECH FLEET</b></div>
+        <p style="color:var(--dim); font-size:14px; max-width:260px; line-height:1.6">Контроль выездных работ и транспорта: координаты, маршруты, фотоотчётность и автоматические нарушения на одной платформе.</p>
       </div>
-      <p style="color:var(--text-dim); font-size:13px; max-width:220px; line-height:1.5;">Контроль выездных сотрудников и транспорта на одной платформе.</p>
+      <div><h4>Платформа</h4><a href="platform.html">Панель диспетчера</a><a href="#dispatching">GPS и смартфон</a><a href="#control">Фотоконтроль</a></div>
+      <div><h4>Компания</h4><a href="#demo">Живое демо</a><a href="#cta">Контакты</a><a href="index1.html">Классическая версия сайта</a></div>
+      <div><h4>Связаться</h4><a href="tel:+77789990203">+7 (778) 999-02-03</a><a href="mailto:366media@mail.ru">366media@mail.ru</a><a href="https://wa.me/77789990203" target="_blank" rel="noopener">WhatsApp</a></div>
     </div>
-    <div>
-      <div class="foot-head">Платформа</div>
-      <a href="#control">Диспетчерская</a><a href="#app">Приложение</a><a href="#modes">GPS-режимы</a>
-    </div>
-    <div>
-      <div class="foot-head">Компания</div>
-      <a href="#industries">Отрасли</a><a href="#contact">Контакты</a>
-    </div>
-    <div>
-      <div class="foot-head">Связаться</div>
-      <a href="tel:+77789990203">+7 (778) 999-02-03</a><a href="mailto:366media@mail.ru">366media@mail.ru</a>
-    </div>
-  </div>
-  <div class="wrap" style="margin-top:32px; padding-top:24px; border-top:1px solid var(--line); font-size:13px; color:var(--text-mute);">
-    © 2026 366TECH FLEET · Алматы, Казахстан
+    <div class="copyright"><span>© 2026 366TECH FLEET · Алматы, Казахстан</span><span>Сделано для диспетчеров, которые не любят сюрпризы</span></div>
   </div>
 </footer>
 
-<!-- ===================== LOGIN MODAL (только диспетчер) ===================== -->
-<div class="modal-overlay" id="login-modal">
-  <div class="modal-box wide">
-    <button class="modal-close" type="button" onclick="closeModal()">✕</button>
-
-    <div>
-      <h3 style="font-size:19px; margin-bottom:6px;">Вход диспетчера</h3>
-      <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:20px;">Доступ к карте, рейсам и отчётности компании.</p>
-      <form id="login-form" novalidate>
-        <div class="field-group">
-          <label class="field-label" for="login-phone">Телефон</label>
-          <input class="field" id="login-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel">
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="login-pass">Пароль</label>
-          <input class="field" id="login-pass" name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
-        </div>
-        <button class="btn btn-primary btn-block" id="login-submit" type="submit">Войти</button>
-
-        <!-- Демо-доступ: клик по блоку подставляет логин и пароль -->
-        <button class="demo-hint" id="demo-hint" type="button" aria-label="Заполнить демо-данные: логин +7 (778) 000-00-00, пароль demo">
-          <span class="dh-title">💡 Демо-доступ</span>
-          <span class="dh-row"><span>Логин:</span><b>+7 (778) 000-00-00</b></span>
-          <span class="dh-row"><span>Пароль:</span><b>demo</b></span>
-          <span class="dh-fill">⚡ Заполнить автоматически</span>
-        </button>
-
-        <div id="dispatcher-status" role="status" aria-live="polite" style="font-size:13px; color:var(--mint); text-align:center; margin-top:12px; min-height:16px;"></div>
-      </form>
-    </div>
-  </div>
-</div>
-
+<!-- ============ БИБЛИОТЕКИ ============ -->
+<script src="https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/imask@7/dist/imask.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@24/build/js/intlTelInput.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ---------------- header / mobile nav ---------------- */
-const burger = document.getElementById('burger-btn');
-const drawer = document.getElementById('mobile-drawer');
-burger.addEventListener('click', () => {
-  const open = drawer.classList.toggle('open');
-  burger.classList.toggle('open', open);
-  burger.setAttribute('aria-expanded', open);
+<script>
+/* =========================================================
+   МЕДИА — единственное место, где заданы файлы.
+   Замените ссылки на свои (или на локальные /media/...),
+   и вся страница подхватит их автоматически.
+   ========================================================= */
+const MEDIA = {
+  heroVideo:     'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182120_bd581904-d6cb-4fc7-b17b-23cfdd2a134c.mp4',
+  heroPoster:    'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_c4ef8c3f-0ebb-4254-bd55-f8dc0e3ca7f0.png',
+  dispatchVideo: 'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182156_62eb3e14-b76c-4b33-ba00-2519cfb8ae90.mp4',
+  photoBefore:   'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_1de1c13e-9254-4a5e-9a1f-a56a7c94d2bd.png',
+  photoAfter:    'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_9e5e4a89-a6ce-4312-be73-bce38daa1c27.png',
+};
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp  = (a, b, t) => a + (b - a) * t;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isCoarse = window.matchMedia('(hover:none)').matches;
+
+/* ---------------- подключение медиа ---------------- */
+function attachMedia(){
+  const set = (el, src, poster) => {
+    if(!el || !src || src.startsWith('__')) return false;
+    if(poster) el.poster = poster;
+    el.src = src;
+    el.addEventListener('error', () => el.style.display = 'none', { once:true });
+    const play = () => el.play().catch(() => {});
+    el.addEventListener('loadeddata', play, { once:true });
+    if(!reduceMotion) play();
+    return true;
+  };
+  set($('#hero-video'), MEDIA.heroVideo, MEDIA.heroPoster);
+  set($('#disp-video'), MEDIA.dispatchVideo);
+
+  const b = $('#img-before'), a = $('#img-after'), ph = $('#cmp-ph');
+  if(MEDIA.photoBefore && !MEDIA.photoBefore.startsWith('__')){
+    b.src = MEDIA.photoBefore; a.src = MEDIA.photoAfter || MEDIA.photoBefore;
+    ph.style.display = 'none';
+  }
+}
+attachMedia();
+
+/* =========================================================
+   ПЛАВНЫЙ СКРОЛЛ (Lenis) + GSAP, если загрузились
+   ========================================================= */
+let lenis = null;
+if(window.Lenis && !reduceMotion && !isCoarse){
+  lenis = new Lenis({ duration:1.15, lerp:.1, smoothWheel:true, wheelMultiplier:.95 });
+  const raf = t => { lenis.raf(t); requestAnimationFrame(raf); };
+  requestAnimationFrame(raf);
+  if(window.gsap && window.ScrollTrigger){
+    gsap.registerPlugin(ScrollTrigger);
+    lenis.on('scroll', ScrollTrigger.update);
+  }
+  $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if(t){ e.preventDefault(); lenis.scrollTo(t, { offset:-20 }); }
+  }));
+}
+
+/* =========================================================
+   ДВИЖОК ПРОКРУТКИ: прогресс каждой «сцены» → CSS-переменные
+   (работает и без GSAP — sticky + rAF)
+   ========================================================= */
+const scenes = [];
+function registerScene(el, onProgress){ scenes.push({ el, onProgress, p:-1 }); }
+
+let ticking = false;
+function onScroll(){
+  if(ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    const vh = window.innerHeight;
+    const doc = document.documentElement;
+    $('#sp').style.setProperty('--sp', (doc.scrollTop / (doc.scrollHeight - vh) * 100).toFixed(2) + '%');
+
+    scenes.forEach(s => {
+      const r = s.el.getBoundingClientRect();
+      const total = r.height - vh;
+      const p = clamp(total > 0 ? (-r.top) / total : (r.top < vh / 2 ? 1 : 0));
+      if(Math.abs(p - s.p) > 0.0005){ s.p = p; s.onProgress(p); }
+    });
+
+    header();
+    ticking = false;
+  });
+}
+window.addEventListener('scroll', onScroll, { passive:true });
+window.addEventListener('resize', onScroll);
+
+/* ---------------- шапка ---------------- */
+let lastY = 0;
+function header(){
+  const y = window.scrollY;
+  const h = $('#hdr');
+  h.classList.toggle('hide', y > lastY && y > 420 && !$('#drawer').classList.contains('on'));
+  lastY = y;
+}
+$('#burger').addEventListener('click', () => {
+  const on = $('#drawer').classList.toggle('on');
+  $('#burger').classList.toggle('on', on);
+  $('#burger').setAttribute('aria-expanded', String(on));
 });
-drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
-  drawer.classList.remove('open'); burger.classList.remove('open'); burger.setAttribute('aria-expanded','false');
+$$('#drawer a').forEach(a => a.addEventListener('click', () => {
+  $('#drawer').classList.remove('on'); $('#burger').classList.remove('on');
 }));
 
-/* ---------------- login modal (только диспетчер) ---------------- */
-const modal = document.getElementById('login-modal');
-document.getElementById('login-btn').addEventListener('click', () => openModal());
-function openModal(){ modal.classList.add('open'); document.body.style.overflow='hidden'; }
-function closeModal(){ modal.classList.remove('open'); document.body.style.overflow=''; fillRun++; }
-modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+/* =========================================================
+   SECTION 1 — кинематографический зум в панель
+   ========================================================= */
+const heroEl = $('#hero'), media = $('#hero-media'), copy = $('#hero-copy'), dash = $('#dispatch'), cue = $('#cue');
+registerScene(heroEl, p => {
+  /* 0 → .42 : уходит заголовок, камера наезжает на город */
+  const fade = clamp(p / .42);
+  copy.style.setProperty('--copy-o', String(1 - fade));
+  copy.style.setProperty('--copy-y', (-90 * fade).toFixed(1) + 'px');
+  copy.style.setProperty('--copy-s', (1 - .06 * fade).toFixed(3));
+  copy.style.setProperty('--copy-b', (10 * fade).toFixed(1) + 'px');
+  cue.style.opacity = String(1 - clamp(p / .12));
 
-/* ---------------- demo access: автозаполнение ---------------- */
-const DEMO = { digits:'7780000000', pass:'demo' };   /* +7 (778) 000-00-00 */
-const loginForm   = document.getElementById('login-form');
-const loginInput  = document.getElementById('login-phone');
-const passInput   = document.getElementById('login-pass');
-const loginStatus = document.getElementById('dispatcher-status');
-let loginPhone = null;     /* виджет телефона, инициализируется ниже */
-let fillRun = 0;
+  media.style.setProperty('--media-s', (1 + .5 * p).toFixed(3));
+  media.style.setProperty('--media-y', (-60 * p).toFixed(1) + 'px');
+  media.style.setProperty('--video-o', (.75 - .45 * clamp((p - .35) / .5)).toFixed(2));
 
-function typeDigits(phone, digits, run){
-  return new Promise(resolve => {
-    if(reduceMotion || !phone){ if(phone) phone.digits = digits; return resolve(); }
-    phone.clear(); let i = 0;
-    (function step(){
-      if(run !== fillRun) return resolve();
-      phone.digits = digits.slice(0, ++i);
-      if(i < digits.length) setTimeout(step, 45); else resolve();
-    })();
-  });
-}
-function typeInto(el, text, run){
-  return new Promise(resolve => {
-    if(reduceMotion){ el.value = text; return resolve(); }
-    el.value = ''; let i = 0;
-    (function step(){
-      if(run !== fillRun) return resolve();
-      el.value = text.slice(0, ++i);
-      if(i < text.length) setTimeout(step, 55); else resolve();
-    })();
-  });
-}
-
-async function fillDemo(){
-  const run = ++fillRun;
-  loginStatus.style.color = 'var(--mint)';
-  loginStatus.textContent = '';
-  [loginInput, passInput].forEach(f => f.classList.remove('autofilled'));
-  await typeDigits(loginPhone, DEMO.digits, run); if(run !== fillRun) return;
-  loginInput.classList.add('autofilled');
-  await typeInto(passInput, DEMO.pass, run); if(run !== fillRun) return;
-  passInput.classList.add('autofilled');
-  loginStatus.textContent = 'Демо-данные подставлены — нажмите «Войти»';
-  document.getElementById('login-submit').focus({ preventScroll:true });
-}
-document.getElementById('demo-hint').addEventListener('click', fillDemo);
-[loginInput, passInput].forEach(f => f.addEventListener('input', () => f.classList.remove('autofilled')));
-
-loginForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const okPhone = loginPhone ? loginPhone.isValid() : loginInput.value.trim().length > 5;
-  if(!okPhone || !passInput.value){
-    loginStatus.style.color = 'var(--amber)';
-    loginStatus.textContent = 'Введите номер телефона и пароль или нажмите «Заполнить автоматически».';
-    return;
-  }
-  loginStatus.style.color = 'var(--mint)';
-  loginStatus.textContent = 'Входим в панель диспетчера… (' + loginPhone.full() + ')';
-  window.location.href = '/dashboard';
+  /* .3 → .78 : из глубины поднимается панель диспетчера */
+  const up = clamp((p - .3) / .48);
+  const e = 1 - Math.pow(1 - up, 3);
+  dash.style.setProperty('--dash-o', e.toFixed(3));
+  dash.style.setProperty('--dash-rx', (18 * (1 - e)).toFixed(2) + 'deg');
+  dash.style.setProperty('--dash-s', lerp(.62, 1, e).toFixed(3));
+  dash.style.setProperty('--dash-y', lerp(70, 0, e).toFixed(1) + 'px');
+  dash.classList.toggle('live', up > .92);
+  city.zoom = p;
 });
 
+/* ---------------- canvas: ночной город с трафиком ---------------- */
+const city = (() => {
+  const cv = $('#city'), ctx = cv.getContext('2d');
+  let w = 0, h = 0, dpr = 1, t = 0;
+  const ROADS = 13, SPAN = 2400, CARS = 90;
+  const cars = Array.from({ length:CARS }, () => ({
+    axis: Math.random() > .5 ? 0 : 1,
+    lane: Math.floor(Math.random() * ROADS),
+    pos:  Math.random() * SPAN - SPAN / 2,
+    spd:  (Math.random() * .5 + .35) * (Math.random() > .5 ? 1 : -1),
+    hue:  Math.random() > .45 ? 'v' : 'm',
+  }));
+  const blocks = Array.from({ length:80 }, () => ({
+    x:(Math.random() - .5) * SPAN, z:(Math.random() - .5) * SPAN,
+    w: 60 + Math.random() * 110, hgt: 40 + Math.random() * 230,
+  }));
 
-/* ---------------- умный ввод телефона: флаг страны + маска ---------------- */
-/* Казахстан выбран по умолчанию, код +7 подставляется автоматически,
-   номер форматируется как +7 (777) 000-00-00. Если CDN недоступен —
-   работает встроенный запасной форматтер. */
-const PHONE_MASKS = {
-  kz:'(000) 000-00-00', ru:'(000) 000-00-00', kg:'(000) 00-00-00',
-  uz:'(00) 000-00-00',  by:'(00) 000-00-00',  ua:'(00) 000-00-00',
-  tr:'(000) 000-00-00', ge:'(000) 00-00-00',  cn:'000 0000 0000',
-};
+  function size(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = cv.clientWidth; h = cv.clientHeight;
+    cv.width = w * dpr; cv.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const api = { zoom:0 };
+
+  function project(x, z, y = 0){
+    const a = t * .00006 + api.zoom * .5;                 /* медленное вращение + доворот на скролле */
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const rx = x * ca - z * sa, rz = x * sa + z * ca;
+    const camZ = lerp(1250, 460, api.zoom);                /* «влетаем» в сцену */
+    const camY = lerp(520, 300, api.zoom);
+    const d = rz + camZ;
+    if(d < 40) return null;
+    const f = h * 1.05;
+    return { X: w / 2 + rx * f / d, Y: h * .44 + (camY - y) * f / d, d };
+  }
+  function line(a, b, color, width){
+    if(!a || !b) return;
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
+    ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+  }
+  function frame(ts){
+    t = ts || 0;
+    if(!w || !h) size();
+    ctx.clearRect(0, 0, w, h);
+
+    /* свечение горизонта */
+    const hg = ctx.createLinearGradient(0, h * .3, 0, h * .78);
+    hg.addColorStop(0, 'rgba(76,79,232,0)');
+    hg.addColorStop(.55, 'rgba(90,80,220,.16)');
+    hg.addColorStop(1, 'rgba(47,224,172,.05)');
+    ctx.fillStyle = hg; ctx.fillRect(0, h * .3, w, h * .5);
+
+    /* дорожная сетка */
+    const step = SPAN / ROADS;
+    for(let i = 0; i <= ROADS; i++){
+      const o = -SPAN / 2 + i * step;
+      line(project(o, -SPAN / 2), project(o, SPAN / 2), 'rgba(158,170,225,.12)', 1);
+      line(project(-SPAN / 2, o), project(SPAN / 2, o), 'rgba(158,170,225,.12)', 1);
+    }
+    /* кварталы */
+    blocks.forEach(b => {
+      const p1 = project(b.x, b.z), p2 = project(b.x, b.z, b.hgt);
+      if(!p1 || !p2) return;
+      const fade = clamp(1 - p1.d / 3200);
+      ctx.strokeStyle = 'rgba(139,92,246,' + (.2 * fade).toFixed(3) + ')';
+      ctx.lineWidth = Math.max(.6, b.w * 60 / p1.d);
+      ctx.beginPath(); ctx.moveTo(p1.X, p1.Y); ctx.lineTo(p2.X, p2.Y); ctx.stroke();
+      ctx.fillStyle = 'rgba(150,170,255,' + (.3 * fade).toFixed(3) + ')';
+      ctx.fillRect(p2.X - 1, p2.Y - 1, 2.2, 2.2);
+    });
+    /* трафик */
+    cars.forEach(c => {
+      if(!reduceMotion) c.pos += c.spd * 2.4;
+      if(c.pos > SPAN / 2) c.pos = -SPAN / 2;
+      if(c.pos < -SPAN / 2) c.pos = SPAN / 2;
+      const lane = -SPAN / 2 + c.lane * step;
+      const a = c.axis ? project(lane, c.pos) : project(c.pos, lane);
+      const b = c.axis ? project(lane, c.pos - c.spd * 42) : project(c.pos - c.spd * 42, lane);
+      if(!a || !b) return;
+      const fade = clamp(1 - a.d / 2600);
+      const col = c.hue === 'v' ? '139,92,246' : '47,224,172';
+      ctx.strokeStyle = 'rgba(' + col + ',' + (.85 * fade).toFixed(3) + ')';
+      ctx.lineWidth = Math.max(1.2, 260 / a.d);
+      ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+      ctx.shadowColor = 'rgba(' + col + ',.9)'; ctx.shadowBlur = 12;
+      ctx.fillStyle = 'rgba(' + col + ',' + (.98 * fade).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(a.X, a.Y, Math.max(1.2, 320 / a.d), 0, 6.283); ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', size);
+  size(); requestAnimationFrame(frame);
+  return api;
+})();
+
+/* ---------------- мини-карта внутри панели героя ---------------- */
+const fleet = [
+  { id:'01', plate:'702 AB 02', who:'Арман К.',   src:'GPS',      st:'work',    c:'#2fe0ac', txt:'На объекте', x:.33, y:.42 },
+  { id:'07', plate:'118 AC 02', who:'Данияр С.',  src:'GPS',      st:'moving',  c:'#4c9bff', txt:'38 км/ч',   x:.58, y:.3  },
+  { id:'12', plate:'366 BX 02', who:'Ерлан Т.',   src:'GPS',      st:'alert',   c:'#ff5c7a', txt:'28 мин',    x:.24, y:.66 },
+  { id:'23', plate:'204 EA 02', who:'Асель Н.',   src:'Смартфон', st:'moving',  c:'#4c9bff', txt:'46 км/ч',   x:.72, y:.58 },
+  { id:'31', plate:'557 KZ 02', who:'Бекзат О.',  src:'Смартфон', st:'idle',    c:'#f6ab3f', txt:'Стоит',     x:.48, y:.74 },
+  { id:'04', plate:'910 KM 02', who:'Марат Ж.',   src:'GPS',      st:'offline', c:'#5a5f73', txt:'Офлайн',    x:.83, y:.2  },
+];
+$('#hero-side').innerHTML = fleet.slice(0, 5).map(v => `
+  <div class="d-row">
+    <span class="dot" style="background:${v.c}; box-shadow:0 0 10px ${v.c}"></span>
+    <span><span class="n">${v.plate}</span><br><span class="m">${v.who} · ${v.src}</span></span>
+    <span class="r" style="color:${v.c}">${v.txt}</span>
+  </div>`).join('');
+
+function miniMap(canvas, points, opts = {}){
+  const ctx = canvas.getContext('2d');
+  let w, h, dpr, t = 0;
+  const pts = points.map(p => ({ ...p, vx:(Math.random() - .5) * .00035, vy:(Math.random() - .5) * .00035 }));
+  function size(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function frame(ts){
+    t = ts || 0;
+    if(!w || !h) size();
+    ctx.clearRect(0, 0, w, h);
+    /* улицы */
+    ctx.strokeStyle = 'rgba(255,255,255,.055)'; ctx.lineWidth = 1;
+    for(let i = 1; i < 8; i++){
+      ctx.beginPath(); ctx.moveTo(0, h / 8 * i); ctx.lineTo(w, h / 8 * i); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w / 8 * i, 0); ctx.lineTo(w / 8 * i, h); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(139,92,246,.22)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(w * .08, h * .8); ctx.bezierCurveTo(w * .3, h * .2, w * .62, h * .95, w * .93, h * .28); ctx.stroke();
+
+    pts.forEach(p => {
+      if(!reduceMotion && p.st !== 'offline' && p.st !== 'idle'){
+        p.x += p.vx * 16; p.y += p.vy * 16;
+        if(p.x < .06 || p.x > .94) p.vx *= -1;
+        if(p.y < .08 || p.y > .92) p.vy *= -1;
+      }
+      const X = p.x * w, Y = p.y * h;
+      if(p.st === 'moving' || p.st === 'work'){
+        const r = 6 + (Math.sin(t / 420 + p.x * 9) + 1) * 7;
+        ctx.strokeStyle = p.c + '55'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(X, Y, r, 0, 6.283); ctx.stroke();
+      }
+      ctx.fillStyle = p.c;
+      ctx.shadowColor = p.c; ctx.shadowBlur = 14;
+      ctx.beginPath(); ctx.arc(X, Y, opts.r || 5, 0, 6.283); ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', size);
+  size(); requestAnimationFrame(frame);
+}
+miniMap($('#hero-map'), fleet);
+miniMap($('#mini-map'), fleet, { r:6 });
+
+/* =========================================================
+   SECTION 2 — pinned dispatching
+   ========================================================= */
+const steps = $$('#dispatching .step');
+const badges = $$('#dispatching .badge');
+registerScene($('#dispatching'), p => {
+  $('#dp').style.setProperty('--dp', (p * 100).toFixed(1) + '%');
+  const idx = p < .34 ? 0 : p < .67 ? 1 : 2;
+  steps.forEach((s, i) => s.classList.toggle('on', i === idx));
+  badges.forEach(b => b.classList.toggle('on', p >= parseFloat(b.dataset.at)));
+});
+
+/* дорожный canvas как подложка, если видео не подключено */
+(() => {
+  const cv = $('#road'); if(!cv) return;
+  const ctx = cv.getContext('2d');
+  let w, h, dpr;
+  const dashes = Array.from({ length:26 }, (_, i) => ({ y: i / 26, s: .0016 + Math.random() * .0016 }));
+  function size(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = cv.clientWidth; h = cv.clientHeight;
+    cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function frame(){
+    if(!w || !h) size();
+    ctx.clearRect(0, 0, w, h);
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#080a12'); g.addColorStop(1, '#04050a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    /* перспективная дорога */
+    ctx.fillStyle = 'rgba(255,255,255,.03)';
+    ctx.beginPath(); ctx.moveTo(w * .5 - 26, 0); ctx.lineTo(w * .5 + 26, 0); ctx.lineTo(w * 1.18, h); ctx.lineTo(w * -.18, h); ctx.closePath(); ctx.fill();
+    dashes.forEach(d => {
+      if(!reduceMotion) d.y += d.s * (1 + d.y * 5);
+      if(d.y > 1) d.y = 0;
+      const y = d.y * h, k = d.y;
+      const wdt = lerp(2, 16, k), len = lerp(6, 48, k);
+      ctx.fillStyle = 'rgba(47,224,172,' + (.15 + .5 * k).toFixed(2) + ')';
+      ctx.fillRect(w * .5 - wdt / 2, y, wdt, len);
+    });
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', size);
+  size(); requestAnimationFrame(frame);
+})();
+
+/* =========================================================
+   SECTION 3 — сравнение ДО/ПОСЛЕ, метры, пороги, таймер
+   ========================================================= */
+(() => {
+  const cmp = $('#compare'); if(!cmp) return;
+  const set = clientX => {
+    const r = cmp.getBoundingClientRect();
+    cmp.style.setProperty('--cx', (clamp((clientX - r.left) / r.width) * 100).toFixed(1) + '%');
+  };
+  let dragging = false;
+  cmp.addEventListener('pointerdown', e => { dragging = true; cmp.setPointerCapture(e.pointerId); set(e.clientX); });
+  cmp.addEventListener('pointermove', e => { if(dragging) set(e.clientX); });
+  cmp.addEventListener('pointerup',   () => dragging = false);
+  cmp.addEventListener('pointercancel', () => dragging = false);
+  cmp.addEventListener('pointerleave', () => dragging = false);
+})();
+
+$$('#thresholds button').forEach(b => b.addEventListener('click', () => {
+  $$('#thresholds button').forEach(x => x.classList.toggle('on', x === b));
+  $('#th-label').textContent = b.dataset.th;
+}));
+
+(() => {
+  let sec = 28 * 60 + 14;
+  const el = $('#stop-timer');
+  setInterval(() => {
+    if(document.hidden) return;
+    sec++;
+    el.textContent = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+  }, 1000);
+})();
+
+/* появление блоков */
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+}), { threshold:.2, rootMargin:'0px 0px -8% 0px' });
+$$('.reveal').forEach(el => io.observe(el));
+
+/* =========================================================
+   SECTION 4 — вкладки демо
+   ========================================================= */
+const tabs = $$('#tabs button'), pill = $('#pill');
+function movePill(btn){
+  pill.style.width = btn.offsetWidth + 'px';
+  pill.style.transform = 'translateX(' + (btn.offsetLeft - 8) + 'px)';
+}
+function selectTab(btn){
+  tabs.forEach(b => b.classList.toggle('on', b === btn));
+  $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.pane === btn.dataset.pane));
+  movePill(btn);
+}
+tabs.forEach(b => b.addEventListener('click', () => selectTab(b)));
+window.addEventListener('load', () => movePill(tabs[0]));
+window.addEventListener('resize', () => movePill($('#tabs button.on') || tabs[0]));
+setTimeout(() => movePill(tabs[0]), 60);
+
+$('#mini-list').innerHTML = fleet.map(v => `
+  <div class="d-row" style="border:1px solid var(--hair-2); background:rgba(255,255,255,.02); margin-bottom:6px">
+    <span class="dot" style="background:${v.c}; box-shadow:0 0 10px ${v.c}"></span>
+    <span><span class="n">${v.plate}</span><br><span class="m">${v.src}</span></span>
+    <span class="r" style="color:${v.c}">${v.txt}</span>
+  </div>`).join('');
+
+const trips = [
+  ['№1601','702 AB 02 · Арман К.','Заказной вывоз','3 из 5',65],
+  ['№1598','118 AC 02 · Данияр С.','Доставка воды','2 из 6',35],
+  ['№1548','366 BX 02 · Ерлан Т.','Постоянный вывоз','12 из 25',48],
+  ['№1612','204 EA 02 · Асель Н.','Курьерская доставка','1 из 9',20],
+  ['№1620','Курьер · Айгерим Д.','Курьерская доставка','8 из 9',90],
+  ['№1541','803 CC 02 · Жанна К.','Постоянный вывоз','25 из 25',100],
+];
+$('#trip-list').innerHTML = trips.map(([no, veh, type, pts, pr]) => `
+  <div class="trip-row">
+    <span class="mono" style="color:#fff; font-size:13px">${no}</span>
+    <span><span style="color:#fff; font-size:13.5px">${veh}</span><br><span class="muted">${type} · ${pts}</span></span>
+    <span style="display:flex; align-items:center; gap:10px"><span class="bar-mini"><i style="width:${pr}%"></i></span><span class="muted mono">${pr}%</span></span>
+  </div>`).join('');
+
+/* =========================================================
+   SECTION 5 — форма: телефон с флагом + маска
+   ========================================================= */
+const PHONE_MASKS = { kz:'(000) 000-00-00', ru:'(000) 000-00-00', kg:'(000) 00-00-00', uz:'(00) 000-00-00', by:'(00) 000-00-00', ua:'(00) 000-00-00' };
 function initPhoneField(input){
   if(!input) return null;
   let iti = null, imask = null;
-
   if(window.intlTelInput){
     try{
       iti = window.intlTelInput(input, {
-        initialCountry:'kz',
-        countryOrder:['kz','ru','uz','kg','by','ua'],
-        separateDialCode:true,
-        countrySearch:true,
+        initialCountry:'kz', countryOrder:['kz','ru','uz','kg','by','ua'],
+        separateDialCode:true, countrySearch:true,
         i18n:{ searchPlaceholder:'Поиск страны', noCountriesFound:'Страна не найдена', selectedCountryAriaLabel:'Выбранная страна' },
       });
     }catch(e){ iti = null; }
@@ -924,10 +1201,8 @@ function initPhoneField(input){
   const dial = () => '+' + (iti && iti.getSelectedCountryData ? (iti.getSelectedCountryData().dialCode || '7') : '7');
   const pattern = () => PHONE_MASKS[iso()] || '000 000 0000';
   const slots = () => (pattern().match(/0/g) || []).length;
-
   function fallbackFormat(){
-    const m = pattern();
-    const d = input.value.replace(/\D/g, '').slice(0, slots());
+    const m = pattern(), d = input.value.replace(/\D/g, '').slice(0, slots());
     let out = '', i = 0;
     for(const ch of m){ if(i >= d.length) break; out += (ch === '0' ? d[i++] : ch); }
     input.value = out;
@@ -935,213 +1210,67 @@ function initPhoneField(input){
   function applyMask(){
     const m = pattern();
     input.placeholder = m.replace(/0/g, '_');
-    if(window.IMask){
-      if(imask) imask.updateOptions({ mask:m });
-      else imask = window.IMask(input, { mask:m, lazy:true });
-    }else{
-      fallbackFormat();
-    }
+    if(window.IMask){ imask ? imask.updateOptions({ mask:m }) : (imask = window.IMask(input, { mask:m, lazy:true })); }
+    else fallbackFormat();
   }
-  if(!iti){                    /* CDN недоступен — показываем код страны сами */
-    const wrap = document.createElement('div');
-    wrap.className = 'phone-fallback';
-    input.parentNode.insertBefore(wrap, input);
-    wrap.appendChild(input);
-    const code = document.createElement('span');
-    code.className = 'pf-code';
-    code.textContent = dial();
-    wrap.appendChild(code);
+  if(!iti){
+    const wrap = document.createElement('div'); wrap.className = 'phone-fallback';
+    input.parentNode.insertBefore(wrap, input); wrap.appendChild(input);
+    const code = document.createElement('span'); code.className = 'pf-code'; code.textContent = dial(); wrap.appendChild(code);
   }
   if(!window.IMask) input.addEventListener('input', fallbackFormat);
-  input.addEventListener('countrychange', () => {
-    if(imask) imask.value = ''; else input.value = '';
-    applyMask();
-  });
+  input.addEventListener('countrychange', () => { imask ? (imask.value = '') : (input.value = ''); applyMask(); });
   applyMask();
-
   return {
-    input,
     get digits(){ return imask ? imask.unmaskedValue : input.value.replace(/\D/g, ''); },
-    set digits(v){
-      if(imask) imask.unmaskedValue = String(v);
-      else { input.value = String(v); fallbackFormat(); }
-    },
-    full(){ return dial() + this.digits; },          /* например +77780000000 */
-    pretty(){ return dial() + ' ' + input.value; },  /* например +7 (778) 000-00-00 */
+    full(){ return dial() + this.digits; },
     isValid(){ return this.digits.length >= slots(); },
-    clear(){ this.digits = ''; },
   };
 }
+const leadPhone = initPhoneField($('#f-phone'));
 
-/* ---------------- driver photo capture: geolocation + timestamp ---------------- */
-const photoState = { before:false, after:false };
+let biz = 'Вывоз отходов';
+$$('#biz button').forEach(b => b.addEventListener('click', () => {
+  $$('#biz button').forEach(x => x.classList.toggle('on', x === b));
+  biz = b.dataset.biz;
+}));
 
-function updateFinishButton(){
-  const btn = document.getElementById('finish-task');
-  const ready = photoState.before && photoState.after;
-  btn.disabled = !ready;
-  if(!ready){
-    document.getElementById('driver-status').textContent = '';
-  }
-}
-
-function capturePhoto(input, slot){
-  const file = input.files && input.files[0];
-  if(!file) return;
-  const box = document.getElementById('box-' + slot);
-  const placeholder = document.getElementById('placeholder-' + slot);
-  const meta = document.getElementById('meta-' + slot);
-  const reader = new FileReader();
-  reader.onload = e => {
-    placeholder.outerHTML = '<img id="placeholder-' + slot + '" src="' + e.target.result + '" alt="Фото ' + slot + '">';
-  };
-  reader.readAsDataURL(file);
-
-  const time = new Date().toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-  meta.innerHTML = 'Снято: <b>' + time + '</b><br>Определяем геопозицию…';
-  box.classList.add('done');
-  photoState[slot] = true;
-  updateFinishButton();
-
-  if(!navigator.geolocation){
-    meta.innerHTML = 'Снято: <b>' + time + '</b><br>Геопозиция недоступна в браузере';
+$('#lead-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#f-name').value.trim();
+  const ok = $('#form-ok'), okText = $('#form-ok-text');
+  if(!name || !leadPhone || !leadPhone.isValid()){
+    ok.classList.add('on');
+    ok.style.background = 'rgba(246,171,63,.1)'; ok.style.borderColor = 'rgba(246,171,63,.35)'; ok.style.color = '#ffd79a';
+    okText.textContent = 'Заполните имя и телефон — и мы свяжемся с вами.';
     return;
   }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude.toFixed(5);
-      const lon = pos.coords.longitude.toFixed(5);
-      meta.innerHTML = 'Снято: <b>' + time + '</b><br>Гео: <b>' + lat + ', ' + lon + '</b>';
-    },
-    () => { meta.innerHTML = 'Снято: <b>' + time + '</b><br>Гео: доступ не разрешён'; },
-    { enableHighAccuracy:true, timeout:8000 }
-  );
-}
+  ok.style.background = ''; ok.style.borderColor = ''; ok.style.color = '';
+  okText.textContent = name.split(' ')[0] + ', заявка принята. Перезвоним на ' + leadPhone.full() + ' в течение рабочего дня.';
+  ok.classList.add('on');
+  e.target.querySelector('button[type=submit]').textContent = 'Заявка отправлена ✓';
+  if(window.gsap) gsap.fromTo(ok, { scale:.96 }, { scale:1, duration:.6, ease:'elastic.out(1,.6)' });
+});
 
-function finishTask(){
-  const status = document.getElementById('driver-status');
-  if(!photoState.before || !photoState.after){
-    status.textContent = 'Прикрепите оба фото, чтобы завершить задание.';
-    return;
-  }
-  status.textContent = 'Определяем геопозицию для отметки о завершении…';
-  if(!navigator.geolocation){
-    status.textContent = 'Задание отмечено выполненным (геопозиция недоступна).';
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude.toFixed(5);
-      const lon = pos.coords.longitude.toFixed(5);
-      status.textContent = 'Задание завершено · координаты: ' + lat + ', ' + lon;
-    },
-    () => { status.textContent = 'Задание отмечено выполненным (геопозиция недоступна).'; },
-    { enableHighAccuracy:true, timeout:8000 }
-  );
-}
+/* «живые» цифры */
+if(!reduceMotion) setInterval(() => {
+  if(document.hidden) return;
+  const v = 27 + Math.floor(Math.random() * 5);
+  $('#k-moving').textContent = v;
+  $('#tv-moving').textContent = v;
+}, 4200);
 
-/* ---------------- background: parallax on scroll (свойство `translate` не конфликтует с CSS-анимацией `transform`) ---------------- */
-const blobs = document.querySelectorAll('.aurora .blob');
-const parallaxK = [0.08, -0.07, 0.06, -0.12, 0.1];
-let ticking = false;
-if(!reduceMotion){
-  window.addEventListener('scroll', () => {
-    if(ticking) return; ticking = true;
-    requestAnimationFrame(() => {
-      const y = Math.min(window.scrollY, 6000);
-      blobs.forEach((b, i) => { b.style.translate = '0 ' + (y * (parallaxK[i] || 0)) + 'px'; });
-      ticking = false;
+/* GSAP-усиление: мягкий параллакс заголовков секций */
+if(window.gsap && window.ScrollTrigger && !reduceMotion){
+  gsap.utils.toArray('.section-head').forEach(el => {
+    gsap.fromTo(el, { y:34 }, {
+      y:-14, ease:'none',
+      scrollTrigger:{ trigger:el, start:'top bottom', end:'bottom top', scrub:.6 },
     });
-  }, { passive:true });
-}
-
-/* ---------------- background: неоновое пятно за курсором ---------------- */
-const spot = document.querySelector('.aurora .spot');
-if(spot && !reduceMotion && window.matchMedia('(hover:hover) and (pointer:fine)').matches){
-  let tx = innerWidth/2, ty = innerHeight/3, cx = tx, cy = ty, raf = null;
-  const loop = () => {
-    cx += (tx - cx) * 0.08; cy += (ty - cy) * 0.08;
-    spot.style.transform = 'translate3d(' + cx + 'px,' + cy + 'px,0)';
-    raf = (Math.abs(tx - cx) > 0.5 || Math.abs(ty - cy) > 0.5) ? requestAnimationFrame(loop) : null;
-  };
-  window.addEventListener('pointermove', e => {
-    tx = e.clientX; ty = e.clientY; spot.classList.add('on');
-    if(!raf) raf = requestAnimationFrame(loop);
-  }, { passive:true });
-  document.documentElement.addEventListener('mouseleave', () => spot.classList.remove('on'));
-}
-
-/* ---------------- инициализация полей телефона ---------------- */
-loginPhone = initPhoneField(loginInput);
-const demoFormPhone = initPhoneField(document.getElementById('demo-phone'));
-
-/* ---------------- fleet map ---------------- */
-const vehicles = [
-  { plate:'702 AB 02', driver:'Арман К.',  lat:43.2405, lng:76.9285, status:'moving',  speed:'54 км/ч', task:'№1601', addr:'пр. Абая, возле Алма-Ата' },
-  { plate:'118 AC 02', driver:'Данияр С.', lat:43.2555, lng:76.9455, status:'moving',  speed:'38 км/ч', task:'№1598', addr:'ул. Толе би / Достык' },
-  { plate:'366 BX 02', driver:'Ерлан Т.',  lat:43.2465, lng:76.9105, status:'idle',    speed:'0 км/ч',  task:'№1548', addr:'ул. Ауэзова, 106' },
-  { plate:'910 KM 02', driver:'Марат Ж.',  lat:43.2210, lng:76.9060, status:'offline', speed:'—',       task:'—',     addr:'Каныша Сатпаева, депо' },
-  { plate:'204 EA 02', driver:'Асель Н.',  lat:43.2620, lng:76.9330, status:'moving',  speed:'46 км/ч', task:'№1612', addr:'Жибек Жолы / Зенкова' },
-  { plate:'557 KZ 02', driver:'Бекзат О.', lat:43.2325, lng:76.9520, status:'idle',    speed:'0 км/ч',  task:'№1605', addr:'пр. Аль-Фараби' },
-];
-
-const statusMeta = {
-  moving:  { color:'#2fe0ac', label:'В движении' },
-  idle:    { color:'#f6ab3f', label:'Стоит' },
-  offline: { color:'#5a5f73', label:'Оффлайн' },
-};
-
-const map = L.map('fleet-map', { zoomControl:true, attributionControl:true }).setView([43.2380, 76.9200], 12);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  maxZoom:19,
-  attribution:'&copy; OpenStreetMap &copy; CARTO'
-}).addTo(map);
-
-function makeIcon(status){
-  const ping = status === 'moving' ? '<span class="marker-ping"></span>' : '';
-  return L.divIcon({
-    className:'',
-    html:'<div style="position:relative; width:14px; height:14px;">' + ping +
-         '<span class="marker-dot marker-' + status + '" style="position:absolute; inset:0;"></span></div>',
-    iconSize:[14,14],
-    iconAnchor:[7,7],
-    popupAnchor:[0,-8]
   });
 }
 
-function popupHtml(v){
-  const meta = statusMeta[v.status];
-  return '<div class="pop-title">' + v.plate + ' · ' + v.driver + '</div>' +
-    '<div class="pop-row"><span>Статус</span><b style="color:' + meta.color + ';">' + meta.label + '</b></div>' +
-    '<div class="pop-row"><span>Скорость</span><b>' + v.speed + '</b></div>' +
-    '<div class="pop-row"><span>Адрес</span><b>' + v.addr + '</b></div>' +
-    '<div class="pop-row"><span>Задание</span><b>' + v.task + '</b></div>';
-}
-
-const markers = vehicles.map(v => {
-  const m = L.marker([v.lat, v.lng], { icon: makeIcon(v.status) }).addTo(map);
-  m.bindPopup(popupHtml(v));
-  return m;
-});
-
-const listEl = document.getElementById('veh-list');
-vehicles.forEach((v, i) => {
-  const meta = statusMeta[v.status];
-  const row = document.createElement('div');
-  row.className = 'veh-row';
-  row.innerHTML =
-    '<div class="info"><span class="dot" style="background:' + meta.color + ';"></span>' +
-    '<div class="txt"><div class="plate">' + v.plate + ' · ' + v.driver + '</div>' +
-    '<div class="driver">' + v.addr + '</div></div></div>' +
-    '<div class="status" style="color:' + meta.color + ';">' + (v.status==='moving' ? v.speed : meta.label) + '</div>';
-  row.addEventListener('click', () => {
-    document.querySelectorAll('.veh-row').forEach(r => r.classList.remove('active'));
-    row.classList.add('active');
-    map.flyTo([v.lat, v.lng], 14, { duration:0.6 });
-    markers[i].openPopup();
-  });
-  listEl.appendChild(row);
-});
+onScroll();
 </script>
 </body>
 </html>
