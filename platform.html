@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>366TECH FLEET — панель диспетчера</title>
+<meta name="description" content="Демо диспетчерской панели 366TECH FLEET: карта транспорта и сотрудников в реальном времени, рейсы, контроль остановок, фотоотчётность.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#08090d; --bg-1:#0d0f16; --panel:#11131c; --panel-2:#161927; --raised:#1b1e2d;
+  --line:rgba(255,255,255,.08); --line-soft:rgba(255,255,255,.05);
+  --text:#eef0f6; --text-dim:#a2a5b8; --text-mute:#666a80;
+  --violet:#8b5cf6; --violet-soft:#b9a3ff; --violet-deep:#5b3ce0;
+  --mint:#2fe0ac; --blue:#4c9bff; --amber:#f6ab3f; --red:#ff5c7a; --grey:#5a5f73;
+  --glow-v:rgba(139,92,246,.4);
+  --radius-s:10px; --radius-m:16px; --radius-l:22px;
+  --sb:250px; --gap:14px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text); overflow:hidden;
+  font-family:'Inter',ui-sans-serif,system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+  font-size:14px;
+}
+h1,h2,h3,h4{margin:0; font-family:'Space Grotesk',sans-serif; font-weight:600; letter-spacing:-0.01em; color:#fff}
+p{margin:0}
+a{color:inherit; text-decoration:none}
+ul{margin:0; padding:0; list-style:none}
+button,input,select,textarea{font-family:inherit; font-size:inherit; color:inherit}
+button{cursor:pointer; border:none; background:none}
+:focus-visible{outline:2px solid var(--violet-soft); outline-offset:2px; border-radius:6px}
+::selection{background:var(--violet); color:#fff}
+.scroll{overflow:auto; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.18) transparent}
+.scroll::-webkit-scrollbar{width:8px; height:8px}
+.scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14); border-radius:8px}
+.scroll::-webkit-scrollbar-track{background:transparent}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+
+/* ---------------- фоновое свечение ---------------- */
+.bg-glow{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden}
+.bg-glow i{position:absolute; border-radius:50%; filter:blur(80px); opacity:.5; display:block}
+.bg-glow .g1{width:620px; height:620px; top:-240px; left:-120px; background:radial-gradient(circle,rgba(139,92,246,.35),transparent 70%); animation:float1 30s ease-in-out infinite}
+.bg-glow .g2{width:520px; height:520px; bottom:-220px; right:-100px; background:radial-gradient(circle,rgba(47,224,172,.22),transparent 70%); animation:float2 36s ease-in-out infinite}
+@keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,80px) scale(1.15)}}
+@keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-70px,-50px) scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.bg-glow i{animation:none}}
+
+/* ---------------- каркас ---------------- */
+.app{position:relative; z-index:1; display:grid; grid-template-columns:var(--sb) 1fr; height:100dvh; width:100%}
+
+/* ---------------- сайдбар ---------------- */
+.sidebar{
+  display:flex; flex-direction:column; gap:6px; min-height:0; padding:18px 14px;
+  background:linear-gradient(180deg, rgba(17,19,28,.92), rgba(8,9,13,.92));
+  border-right:1px solid var(--line); backdrop-filter:blur(14px);
+}
+.brand{display:flex; align-items:center; gap:10px; padding:4px 8px 18px}
+.brand .mark{width:36px; height:36px; border-radius:11px; background:linear-gradient(135deg,var(--violet),var(--mint)); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; color:#08090d}
+.brand .nm{font-weight:600; font-size:15px; letter-spacing:-.01em; line-height:1.2}
+.brand .nm span{display:block; margin-top:2px; font-size:10.5px; color:var(--text-mute); font-weight:500; letter-spacing:.08em; text-transform:uppercase}
+.nav-label{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-mute); padding:10px 12px 6px}
+.nav-btn{
+  display:flex; align-items:center; gap:12px; width:100%; padding:11px 12px; border-radius:13px;
+  color:var(--text-dim); font-size:14px; font-weight:500; text-align:left; position:relative;
+  transition:background .15s ease, color .15s ease;
+}
+.nav-btn svg{width:19px; height:19px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.nav-btn:hover{background:rgba(255,255,255,.05); color:#fff}
+.nav-btn.active{background:linear-gradient(90deg, rgba(139,92,246,.22), rgba(139,92,246,.06)); color:#fff}
+.nav-btn.active::before{content:''; position:absolute; left:-14px; top:50%; transform:translateY(-50%); width:3px; height:22px; border-radius:0 3px 3px 0; background:var(--mint); box-shadow:0 0 12px var(--mint)}
+.nav-btn.active svg{color:var(--violet-soft)}
+.nav-btn .cnt{margin-left:auto; font-size:11px; font-weight:600; min-width:22px; height:20px; padding:0 7px; border-radius:9999px; background:rgba(47,224,172,.15); color:var(--mint); display:flex; align-items:center; justify-content:center}
+.sb-bottom{margin-top:auto; display:flex; flex-direction:column; gap:6px}
+.user-card{display:flex; align-items:center; gap:10px; padding:10px; border-radius:15px; background:var(--panel-2); border:1px solid var(--line-soft); margin-top:8px}
+.avatar{width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--violet),var(--violet-deep)); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#fff; flex-shrink:0}
+.user-card .un{display:block; font-size:13px; font-weight:500; color:#fff; line-height:1.25}
+.user-card .ur{display:block; font-size:11.5px; color:var(--text-mute)}
+
+/* ---------------- основная колонка ---------------- */
+.main{display:grid; grid-template-rows:auto 1fr; min-width:0; min-height:0}
+.topbar{
+  display:flex; align-items:center; gap:14px; padding:14px 22px; border-bottom:1px solid var(--line);
+  background:rgba(13,15,22,.6); backdrop-filter:blur(12px);
+}
+.topbar .tt{min-width:0}
+.topbar .tt .crumb{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-mute)}
+.topbar .tt h1{font-size:21px; margin-top:2px}
+.top-actions{margin-left:auto; display:flex; align-items:center; gap:10px}
+.chip-live{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--mint); background:rgba(47,224,172,.1); border:1px solid rgba(47,224,172,.22); padding:7px 13px; border-radius:9999px; white-space:nowrap}
+.chip-live i{width:7px; height:7px; border-radius:50%; background:var(--mint); box-shadow:0 0 8px var(--mint); animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.chip-live i{animation:none}}
+.icon-btn{
+  width:38px; height:38px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2);
+  display:flex; align-items:center; justify-content:center; color:var(--text-dim); position:relative;
+  transition:color .15s ease, border-color .15s ease, background .15s ease;
+}
+.icon-btn:hover{color:#fff; border-color:rgba(255,255,255,.2); background:var(--raised)}
+.icon-btn svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.icon-btn .badge{position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 5px; border-radius:9999px; background:var(--red); color:#fff; font-size:10.5px; font-weight:600; display:flex; align-items:center; justify-content:center; border:2px solid var(--bg)}
+.searchbox{display:flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:0 12px; height:38px; transition:border-color .15s ease}
+.searchbox:focus-within{border-color:var(--violet)}
+.searchbox svg{width:16px; height:16px; color:var(--text-mute); fill:none; stroke:currentColor; stroke-width:1.8}
+.searchbox input{background:none; border:none; outline:none; width:170px; font-size:13.5px}
+.searchbox input::placeholder{color:var(--text-mute)}
+.notif{
+  position:absolute; top:54px; right:0; width:320px; background:var(--panel); border:1px solid var(--line);
+  border-radius:18px; box-shadow:0 30px 70px -25px rgba(0,0,0,.9); padding:8px; z-index:60; display:none;
+}
+.notif.open{display:block}
+.notif h4{font-size:13px; padding:10px 12px 8px}
+.notif .n-item{display:flex; gap:10px; padding:10px 12px; border-radius:12px; cursor:pointer; transition:background .15s ease}
+.notif .n-item:hover{background:rgba(255,255,255,.05)}
+.notif .n-item .dot{width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0}
+.notif .n-item .t1{display:block; font-size:13px; color:#fff; font-weight:500}
+.notif .n-item .t2{display:block; font-size:12px; color:var(--text-mute); margin-top:2px}
+
+/* ---------------- виды ---------------- */
+.views{position:relative; min-height:0; min-width:0; grid-row:2}  /* в ТВ-режиме верхняя панель скрыта — строку фиксируем явно */
+.view{position:absolute; inset:0; padding:18px 22px 22px; display:none; min-height:0}
+.view.active{display:grid}
+#view-map{grid-template-rows:auto 1fr auto; gap:var(--gap)}
+
+.panel{background:rgba(17,19,28,.86); border:1px solid var(--line); border-radius:var(--radius-l); backdrop-filter:blur(10px)}
+.panel-head{display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line)}
+.panel-head h3{font-size:14.5px}
+.panel-head .sub{font-size:11.5px; color:var(--text-mute); margin-top:2px}
+
+/* статистика */
+.stats{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--gap)}
+.stat{
+  position:relative; padding:15px 18px 16px; border-radius:18px; overflow:hidden;
+  background:rgba(17,19,28,.86); border:1px solid var(--line); backdrop-filter:blur(10px);
+  transition:border-color .18s ease, transform .18s ease;
+}
+.stat::after{content:''; position:absolute; left:0; right:0; top:0; height:2px; background:transparent}
+.stat.v-mint::after{background:var(--mint)} .stat.v-blue::after{background:var(--blue)}
+.stat.v-amber::after{background:var(--amber)} .stat.v-grey::after{background:var(--grey)}
+.stat.v-violet::after{background:var(--violet)}
+.stat:hover{border-color:rgba(255,255,255,.18); transform:translateY(-2px)}
+.stat .lbl{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-mute)}
+.stat .val{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:600; color:#fff; line-height:1.1; margin-top:8px; font-variant-numeric:tabular-nums}
+.stat .sub{font-size:11.5px; color:var(--text-mute); margin-top:5px}
+.stat .sub b{color:var(--amber); font-weight:500}
+
+/* карта + правая панель */
+.work{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:var(--gap); min-height:0}
+.map-panel{position:relative; display:grid; grid-template-rows:auto 1fr; min-height:0; overflow:hidden}
+.seg{display:flex; gap:4px; background:var(--panel-2); border:1px solid var(--line-soft); border-radius:11px; padding:3px; margin-left:auto}
+.seg button{padding:6px 13px; border-radius:9px; font-size:12.5px; color:var(--text-dim); font-weight:500; transition:background .15s ease, color .15s ease; white-space:nowrap}
+.seg button:hover{color:#fff}
+.seg button.on{background:var(--raised); color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.4)}
+#map{width:100%; height:100%; background:#0c0e14; z-index:0; isolation:isolate}
+.map-fallback{position:absolute; inset:56px 0 0; display:none; align-items:center; justify-content:center; text-align:center; color:var(--text-mute); font-size:13px; padding:24px}
+.legend{
+  position:absolute; left:16px; bottom:16px; z-index:500; display:flex; gap:14px; flex-wrap:wrap;
+  background:rgba(10,11,16,.82); border:1px solid var(--line); border-radius:14px; padding:10px 14px; backdrop-filter:blur(8px);
+  font-size:11.5px; color:var(--text-dim);
+}
+.legend span{display:inline-flex; align-items:center; gap:6px; white-space:nowrap}
+.legend i{width:8px; height:8px; border-radius:50%; display:inline-block}
+
+/* маркеры */
+.mk{display:block; position:relative; width:16px; height:16px}
+.mk .core{position:absolute; inset:0; border-radius:50%; border:2px solid rgba(8,9,13,.85)}
+.mk .ring{position:absolute; inset:-7px; border-radius:50%; border:2px solid currentColor; animation:ping 2s ease-out infinite}
+@keyframes ping{0%{transform:scale(.6); opacity:.85}100%{transform:scale(1.7); opacity:0}}
+@media (prefers-reduced-motion:reduce){.mk .ring{animation:none; opacity:.25}}
+.mk.sel .core{box-shadow:0 0 0 4px rgba(255,255,255,.22)}
+
+/* leaflet skin */
+.leaflet-popup-content-wrapper{background:#161927; color:#eef0f6; border-radius:14px; border:1px solid rgba(255,255,255,.1); box-shadow:0 24px 50px -16px rgba(0,0,0,.75)}
+.leaflet-popup-tip{background:#161927}
+.leaflet-popup-content{margin:13px 15px; font-family:'Inter',sans-serif; font-size:13px}
+.leaflet-container a.leaflet-popup-close-button{color:#8a8fa3}
+.leaflet-control-attribution{background:rgba(10,11,16,.7)!important; color:#666a80!important}
+.leaflet-control-attribution a{color:#9297ac!important}
+.leaflet-control-zoom a{background:#161927!important; color:#eef0f6!important; border-color:var(--line)!important}
+.leaflet-control-zoom a:hover{background:#1b1e2d!important}
+.pop-t{font-weight:600; color:#fff; margin-bottom:7px; font-size:13.5px}
+.pop-r{display:flex; justify-content:space-between; gap:16px; padding:3px 0; color:#a2a5b8; font-size:12.5px}
+.pop-r b{color:#eef0f6; font-weight:500}
+.pop-btn{margin-top:9px; width:100%; padding:8px; border-radius:10px; background:var(--violet); color:#fff; font-size:12.5px; font-weight:500}
+.pop-btn:hover{filter:brightness(1.1)}
+
+/* правая панель: список */
+.rail{display:grid; grid-template-rows:auto auto 1fr; min-height:0; overflow:hidden}
+.rail-search{padding:12px 14px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+.chips{display:flex; gap:6px; flex-wrap:wrap}
+.chip{padding:6px 12px; border-radius:9999px; font-size:12px; border:1px solid var(--line); color:var(--text-dim); background:transparent; transition:all .15s ease}
+.chip:hover{color:#fff; border-color:rgba(255,255,255,.25)}
+.chip.on{background:rgba(139,92,246,.18); border-color:rgba(139,92,246,.45); color:#fff}
+.veh-list{padding:8px; min-height:0}
+.veh{
+  display:flex; align-items:center; gap:11px; width:100%; padding:11px 11px; border-radius:14px; text-align:left;
+  border:1px solid transparent; transition:background .15s ease, border-color .15s ease;
+}
+.veh:hover{background:rgba(255,255,255,.05)}
+.veh.sel{background:rgba(139,92,246,.14); border-color:rgba(139,92,246,.35)}
+.veh .no{width:28px; height:28px; border-radius:9px; background:var(--panel-2); border:1px solid var(--line-soft); display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:600; color:var(--text-dim); flex-shrink:0}
+.veh .txt{min-width:0; flex:1}
+.veh .p1{font-size:13px; font-weight:500; color:#fff; display:flex; align-items:center; gap:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.veh .p2{display:block; font-size:11.5px; color:var(--text-mute); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.veh .right{text-align:right; flex-shrink:0}
+.veh .sp{display:block; font-size:12.5px; font-weight:500; font-variant-numeric:tabular-nums}
+.veh .st{display:block; font-size:11px; color:var(--text-mute); margin-top:2px}
+.src{display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:6px; flex-shrink:0}
+.src svg{width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.src.gps{background:rgba(139,92,246,.16); color:var(--violet-soft)}
+.src.phone{background:rgba(47,224,172,.14); color:var(--mint)}
+.empty{padding:30px 16px; text-align:center; color:var(--text-mute); font-size:13px}
+
+/* карточка объекта */
+.detail{position:absolute; inset:0; background:var(--panel); border-radius:var(--radius-l); display:none; grid-template-rows:auto 1fr auto; min-height:0; z-index:20}
+.detail.open{display:grid}
+.d-head{padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:10px}
+.back-btn{width:30px; height:30px; border-radius:9px; border:1px solid var(--line); color:var(--text-dim); display:flex; align-items:center; justify-content:center; flex-shrink:0}
+.back-btn:hover{color:#fff; background:rgba(255,255,255,.06)}
+.d-body{padding:14px 16px; min-height:0}
+.pill{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:4px 10px; border-radius:9999px; font-weight:500}
+.d-row{display:flex; justify-content:space-between; gap:14px; padding:8px 0; border-top:1px solid var(--line-soft); font-size:12.5px; color:var(--text-mute)}
+.d-row:first-of-type{border-top:none}
+.d-row b{color:#eef0f6; font-weight:500; text-align:right}
+.sect-t{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-mute); margin:16px 0 8px}
+.progress{height:6px; border-radius:9999px; background:rgba(255,255,255,.07); overflow:hidden}
+.progress i{display:block; height:100%; border-radius:9999px; background:linear-gradient(90deg,var(--violet),var(--mint)); transition:width .4s ease}
+.timeline{position:relative; padding-left:18px}
+.timeline .tl{position:relative; padding:0 0 12px; font-size:12.5px; color:var(--text-dim)}
+.timeline .tl::before{content:''; position:absolute; left:-18px; top:4px; width:9px; height:9px; border-radius:50%; background:var(--panel); border:2px solid var(--grey)}
+.timeline .tl.done::before{background:var(--mint); border-color:var(--mint)}
+.timeline .tl::after{content:''; position:absolute; left:-14px; top:15px; bottom:0; width:1px; background:var(--line)}
+.timeline .tl:last-child::after{display:none}
+.timeline .tl b{color:#fff; font-weight:500}
+.photos{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.photo{border:1px solid var(--line); border-radius:14px; padding:10px; text-align:center; background:var(--panel-2)}
+.photo .ph{height:76px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:8px}
+.photo.ok .ph{background:linear-gradient(135deg, rgba(47,224,172,.16), rgba(139,92,246,.16))}
+.photo.no .ph{background:rgba(255,255,255,.03); border:1px dashed var(--line)}
+.photo .cap{font-size:11.5px; color:var(--text-dim); font-weight:500}
+.photo .meta{font-size:10.5px; color:var(--text-mute); margin-top:3px; line-height:1.4}
+.photo.ok .cap::after{content:' ✓'; color:var(--mint)}
+.d-foot{padding:12px 16px; border-top:1px solid var(--line); display:flex; gap:8px}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:7px; border-radius:11px; font-weight:500; font-size:13px; padding:10px 15px; transition:filter .15s ease, background .15s ease, border-color .15s ease, transform .15s ease; white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:linear-gradient(135deg,var(--violet),#6d3ff0); color:#fff; box-shadow:0 10px 24px -12px var(--glow-v)}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{border:1px solid var(--line); color:var(--text-dim); background:var(--panel-2)}
+.btn-ghost:hover{color:#fff; border-color:rgba(255,255,255,.22)}
+.btn-mint{background:var(--mint); color:#08281f}
+.btn-mint:hover{filter:brightness(1.08)}
+.btn-block{width:100%}
+.btn-sm{padding:8px 12px; font-size:12.5px; border-radius:10px}
+
+/* алерт контроля остановок */
+.alert-pop{
+  position:absolute; right:18px; bottom:18px; z-index:520; width:320px; max-width:calc(100% - 36px);
+  background:linear-gradient(180deg, rgba(27,30,45,.97), rgba(17,19,28,.97)); border:1px solid rgba(246,171,63,.4);
+  border-radius:18px; box-shadow:0 28px 60px -20px rgba(0,0,0,.85); overflow:hidden;
+  transform:translateY(14px); opacity:0; pointer-events:none; transition:opacity .3s ease, transform .3s ease;
+}
+.alert-pop.show{opacity:1; transform:translateY(0); pointer-events:auto}
+.alert-pop .ah{display:flex; align-items:center; gap:11px; padding:14px 16px; border-bottom:1px solid var(--line)}
+.alert-pop .ai{width:34px; height:34px; border-radius:11px; background:rgba(246,171,63,.16); color:var(--amber); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(246,171,63,.35)}50%{box-shadow:0 0 0 8px rgba(246,171,63,0)}}
+@media (prefers-reduced-motion:reduce){.alert-pop .ai{animation:none}}
+.alert-pop .at{display:block; font-size:13.5px; font-weight:600; color:#fff}
+.alert-pop .as{display:block; font-size:11.5px; color:var(--text-mute); margin-top:2px}
+.alert-pop .ab{padding:12px 16px}
+.alert-pop .af{padding:12px 16px; border-top:1px solid var(--line); display:flex; gap:8px}
+.alert-pop .x{margin-left:auto; color:var(--text-mute); font-size:16px; width:28px; height:28px; border-radius:8px}
+.alert-pop .x:hover{color:#fff; background:rgba(255,255,255,.06)}
+
+/* лента событий */
+.events{min-height:0}
+.ev-list{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:var(--line-soft)}
+.ev{display:flex; align-items:center; gap:11px; padding:13px 16px; background:var(--panel); text-align:left; transition:background .15s ease; min-width:0}
+.ev:hover{background:var(--panel-2)}
+.ev .t{font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; flex-shrink:0}
+.ev .ic{width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0}
+.ev .e1{display:block; font-size:13px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ev .e2{display:block; font-size:11.5px; color:var(--text-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ev .arr{margin-left:auto; color:var(--text-mute); flex-shrink:0}
+
+/* таблицы (рейсы) */
+.tbl-wrap{min-height:0}
+table{width:100%; border-collapse:collapse; min-width:760px}
+thead th{position:sticky; top:0; background:var(--panel); text-align:left; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-mute); font-weight:500; padding:12px 18px; border-bottom:1px solid var(--line); z-index:2}
+tbody td{padding:13px 18px; font-size:13px; color:var(--text-dim); border-top:1px solid var(--line-soft)}
+tbody tr{transition:background .15s ease; cursor:pointer}
+tbody tr:hover{background:rgba(255,255,255,.035)}
+td .plate{color:#fff; font-weight:500}
+.tag{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:4px 10px; border-radius:9999px}
+.bar{width:110px; height:6px; border-radius:9999px; background:rgba(255,255,255,.07); overflow:hidden; display:inline-block; vertical-align:middle}
+.bar i{display:block; height:100%; background:linear-gradient(90deg,var(--violet),var(--mint))}
+
+/* отчёты */
+#view-reports, #view-trips, #view-manage{grid-template-rows:auto 1fr; gap:var(--gap)}
+.rep-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:var(--gap); min-height:0}
+.chart{padding:18px}
+.chart-area{display:flex; align-items:flex-end; gap:14px; height:100%; min-height:190px; padding-top:14px}
+.chart-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:0}
+.chart-bar{width:100%; max-width:46px; border-radius:4px 4px 0 0; background:var(--mint); position:relative; transition:filter .15s ease, transform .15s ease}
+.chart-col:hover .chart-bar{filter:brightness(1.15)}
+.chart-col .cap{font-size:11.5px; color:var(--text-mute)}
+.chart-col .num{font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums}
+.chart-tip{position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:var(--raised); border:1px solid var(--line); border-radius:10px; padding:7px 10px; font-size:12px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s ease; color:#fff}
+.chart-col:hover .chart-tip{opacity:1}
+.kpi{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:18px}
+.kpi .k{padding:14px; border-radius:15px; background:var(--panel-2); border:1px solid var(--line-soft)}
+.kpi .k .lbl{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-mute)}
+.kpi .k .val{font-family:'Space Grotesk',sans-serif; font-size:23px; color:#fff; margin-top:6px}
+.kpi .k .sub{font-size:11.5px; color:var(--mint); margin-top:3px}
+.check{display:flex; align-items:center; gap:9px; padding:7px 0; font-size:13px; color:var(--text-dim)}
+.check .b{width:19px; height:19px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0}
+.check .b.y{background:rgba(47,224,172,.16); color:var(--mint)}
+.check .b.n{background:rgba(255,92,122,.14); color:var(--red)}
+
+/* управление */
+.set-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:var(--gap); align-content:start}
+.set-card{padding:18px}
+.set-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 0; border-top:1px solid var(--line-soft)}
+.set-row:first-of-type{border-top:none}
+.set-row .t1{font-size:13.5px; color:#fff}
+.set-row .t2{font-size:11.5px; color:var(--text-mute); margin-top:2px}
+.num-in{width:74px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; text-align:center; font-variant-numeric:tabular-nums; outline:none}
+.num-in:focus{border-color:var(--violet)}
+.switch{width:44px; height:25px; border-radius:9999px; background:rgba(255,255,255,.12); position:relative; transition:background .2s ease; flex-shrink:0}
+.switch::after{content:''; position:absolute; top:3px; left:3px; width:19px; height:19px; border-radius:50%; background:#fff; transition:transform .2s ease}
+.switch.on{background:var(--mint)}
+.switch.on::after{transform:translateX(19px)}
+.toast{
+  position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:900; opacity:0; pointer-events:none;
+  background:var(--raised); border:1px solid var(--line); border-radius:13px; padding:12px 18px; font-size:13px; color:#fff;
+  box-shadow:0 24px 50px -20px rgba(0,0,0,.9); transition:opacity .25s ease, transform .25s ease;
+}
+.toast.show{opacity:1; transform:translate(-50%,0)}
+
+/* ТВ-режим */
+#view-tv{grid-template-rows:auto 1fr; gap:var(--gap)}
+body.tv .sidebar, body.tv .topbar{display:none}
+body.tv .app{grid-template-columns:1fr}
+body.tv .view{padding:20px}
+.tv-head{display:flex; align-items:center; gap:16px}
+.tv-head h2{font-size:26px}
+.tv-stats{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--gap); margin-top:2px}
+.tv-stats .stat .val{font-size:46px}
+.tv-body{display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:var(--gap); min-height:0}
+
+/* адаптив */
+@media (max-width:1280px){
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .work{grid-template-columns:minmax(0,1fr) 300px}
+  .rep-grid{grid-template-columns:1fr}
+}
+@media (max-width:1000px){
+  :root{--sb:0px}
+  .sidebar{
+    position:fixed; left:0; right:0; bottom:0; top:auto; z-index:800; flex-direction:row; align-items:center;
+    gap:2px; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); border-right:none; border-top:1px solid var(--line);
+    background:rgba(13,15,22,.96);
+  }
+  .brand,.nav-label,.sb-bottom{display:none}
+  #nav{display:flex; flex:1; gap:2px; min-width:0}
+  .nav-btn{flex:1; min-width:0; flex-direction:column; align-items:center; gap:4px; padding:8px 4px; font-size:10.5px; border-radius:12px; text-align:center}
+  .nav-btn.active::before{display:none}
+  .nav-btn .cnt{display:none}
+  .app{grid-template-columns:1fr}
+  .panel{backdrop-filter:none}   /* иначе fixed-элементы привязываются к панели */
+  .view{padding:14px 14px 92px; overflow:auto; -webkit-overflow-scrolling:touch}
+  .view.active{display:block}
+  #view-map, #view-trips, #view-reports, #view-manage, #view-tv{display:none}
+  #view-map.active, #view-trips.active, #view-reports.active, #view-manage.active, #view-tv.active{display:block}
+  .stats{display:flex; overflow-x:auto; gap:10px; padding-bottom:4px; scroll-snap-type:x mandatory}
+  .stat{min-width:158px; flex:0 0 auto; scroll-snap-align:start}
+  .work{display:block}
+  .map-panel{height:320px; margin-bottom:12px}
+  .rail{height:min(62vh,520px)}
+  .tbl-wrap{height:auto}
+  .set-grid{display:block}
+  .set-card{margin-bottom:12px}
+  .rep-grid{display:block}
+  .rep-grid .panel{margin-bottom:12px}
+  .chart-area{height:200px}
+  .panel.tbl-wrap{height:70vh}
+  .topbar{padding:12px 14px; flex-wrap:wrap}
+  .topbar .searchbox{display:none}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+  .stat .val{font-size:24px}
+  #view-map{grid-template-rows:auto auto 1fr}
+  .work{grid-template-columns:1fr; grid-template-rows:300px minmax(240px,1fr)}
+  .events{display:none}
+  .ev-list{grid-template-columns:1fr}
+  .tv-body{grid-template-columns:1fr}
+  .tv-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .alert-pop{position:fixed; right:10px; left:10px; bottom:80px; width:auto; max-height:52vh; overflow:auto; z-index:850; background:#1b1e2d}
+  .alert-pop .ah{padding:12px 14px}
+  .alert-pop .ab{padding:8px 14px}
+  .alert-pop .af{padding:10px 14px}
+  .alert-pop .ab .d-row{padding:6px 0; font-size:12px}
+  .panel-head{flex-wrap:wrap}
+  .seg{margin-left:0; width:100%; overflow-x:auto}
+  .seg button{flex:1; white-space:nowrap}
+}
+@media (max-width:560px){
+  .topbar .tt h1{font-size:18px}
+  .chip-live span{display:none}
+  .legend{left:10px; bottom:10px; gap:9px; padding:8px 11px; font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-glow" aria-hidden="true"><i class="g1"></i><i class="g2"></i></div>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <a class="brand" href="index1.html" title="На главную">
+      <span class="mark">366</span>
+      <span class="nm">TECH FLEET<span>Диспетчерская</span></span>
+    </a>
+    <div class="nav-label">Рабочее место</div>
+    <nav id="nav">
+      <button class="nav-btn active" type="button" data-view="map">
+        <svg viewBox="0 0 24 24"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>Карта
+      </button>
+      <button class="nav-btn" type="button" data-view="trips">
+        <svg viewBox="0 0 24 24"><path d="M4 17V7a2 2 0 0 1 2-2h8v12"/><path d="M14 9h3.6l2.9 3v5H18"/><path d="M9.5 17H14"/><circle cx="7" cy="17.5" r="1.9"/><circle cx="16.2" cy="17.5" r="1.9"/></svg>Рейсы
+        <span class="cnt">8</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="reports">
+        <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h4"/></svg>Отчёты
+      </button>
+      <button class="nav-btn" type="button" data-view="manage">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.3a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.5 15H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.8-1V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1 2.8h.2a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z"/></svg>Управление
+      </button>
+      <button class="nav-btn" type="button" data-view="tv">
+        <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8"/></svg>ТВ-режим
+      </button>
+    </nav>
+    <div class="sb-bottom">
+      <div class="nav-label">Аккаунт</div>
+      <button class="nav-btn" type="button" id="help-btn">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 17h.01"/></svg>Помощь
+      </button>
+      <div class="user-card">
+        <span class="avatar">АК</span>
+        <span><span class="un">Аян Касымов</span><span class="ur">Администратор</span></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="tt">
+        <div class="crumb">366TECH FLEET</div>
+        <h1 id="view-title">Карта</h1>
+      </div>
+      <div class="top-actions">
+        <span class="chip-live"><i></i><span>Система онлайн</span></span>
+        <label class="searchbox">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="top-search" placeholder="Поиск машины, водителя…" aria-label="Поиск">
+        </label>
+        <div style="position:relative">
+          <button class="icon-btn" type="button" id="bell" aria-label="Уведомления">
+            <svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>
+            <span class="badge" id="bell-badge">3</span>
+          </button>
+          <div class="notif" id="notif">
+            <h4>Уведомления</h4>
+            <button class="n-item" type="button" data-focus="366 BX 02">
+              <span class="dot" style="background:var(--amber)"></span>
+              <span><span class="t1">Длительная остановка · 366 BX 02</span><span class="t2">28 минут · ул. Ауэзова, 106 · задание №1548</span></span>
+            </button>
+            <button class="n-item" type="button" data-focus="204 EA 02">
+              <span class="dot" style="background:var(--red)"></span>
+              <span><span class="t1">Отклонение от маршрута · 204 EA 02</span><span class="t2">1.2 км от запланированной точки</span></span>
+            </button>
+            <button class="n-item" type="button" data-focus="910 KM 02">
+              <span class="dot" style="background:var(--grey)"></span>
+              <span><span class="t1">Связь потеряна · 910 KM 02</span><span class="t2">Нет координат 14 минут</span></span>
+            </button>
+          </div>
+        </div>
+        <button class="icon-btn" type="button" id="tv-exit" title="Выйти из ТВ-режима" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="views">
+      <!-- ================= КАРТА ================= -->
+      <section class="view active" id="view-map">
+        <div class="stats" id="stats"></div>
+
+        <div class="work">
+          <div class="panel map-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Карта автопарка</h3>
+                <div class="sub" id="upd">Обновлено только что</div>
+              </div>
+              <div class="seg" id="map-seg">
+                <button type="button" class="on" data-f="all">Все</button>
+                <button type="button" data-f="move">В движении</button>
+                <button type="button" data-f="stop">Стоят</button>
+                <button type="button" data-f="phone">Смартфон</button>
+              </div>
+            </div>
+            <div id="map"></div>
+            <div class="map-fallback" id="map-fallback">Карта не загрузилась: нет доступа к тайлам Leaflet.<br>На боевом сервере карта отобразится здесь.</div>
+            <div class="legend">
+              <span><i style="background:var(--mint)"></i>Выполняет задание</span>
+              <span><i style="background:var(--blue)"></i>Движется</span>
+              <span><i style="background:var(--amber)"></i>Остановился</span>
+              <span><i style="background:var(--red)"></i>Проблема / просрочка</span>
+              <span><i style="background:var(--grey)"></i>Офлайн</span>
+            </div>
+
+            <!-- Модуль контроля остановок -->
+            <div class="alert-pop" id="stop-alert" role="alert">
+              <div class="ah">
+                <span class="ai">⚠️</span>
+                <span><span class="at">Длительная остановка</span><span class="as">Порог компании — 20 минут</span></span>
+                <button class="x" type="button" id="alert-close" aria-label="Скрыть">✕</button>
+              </div>
+              <div class="ab">
+                <div class="d-row"><span>Машина</span><b>№15 · 366 BX 02</b></div>
+                <div class="d-row"><span>Стоянка</span><b style="color:var(--amber)">28 минут</b></div>
+                <div class="d-row"><span>Адрес</span><b>ул. Ауэзова, 106</b></div>
+                <div class="d-row"><span>Задание</span><b>№1548</b></div>
+                <div class="d-row"><span>Статус</span><b style="color:#ff8a3d">Вне запланированного объекта</b></div>
+              </div>
+              <div class="af">
+                <button class="btn btn-primary btn-sm" type="button" id="alert-open">Открыть на карте</button>
+                <button class="btn btn-ghost btn-sm" type="button" id="alert-ok">Это рабочее время</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel rail">
+            <div class="panel-head">
+              <div>
+                <h3>Транспорт и сотрудники</h3>
+                <div class="sub" id="rail-count">—</div>
+              </div>
+            </div>
+            <div class="rail-search">
+              <label class="searchbox" style="height:36px">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="search" id="rail-search" placeholder="Номер, водитель, задание…" style="width:100%" aria-label="Поиск по списку">
+              </label>
+              <div class="chips" id="rail-chips">
+                <button class="chip on" type="button" data-f="all">Все</button>
+                <button class="chip" type="button" data-f="move">В движении</button>
+                <button class="chip" type="button" data-f="stop">Стоят</button>
+                <button class="chip" type="button" data-f="gps">GPS-трекер</button>
+                <button class="chip" type="button" data-f="phone">Смартфон</button>
+              </div>
+            </div>
+            <div class="veh-list scroll" id="veh-list"></div>
+
+            <!-- карточка объекта -->
+            <div class="detail" id="detail">
+              <div class="d-head">
+                <button class="back-btn" type="button" id="detail-back" aria-label="Назад к списку">←</button>
+                <div style="min-width:0; flex:1">
+                  <h3 id="d-title">—</h3>
+                  <div class="sub" id="d-sub">—</div>
+                </div>
+                <span class="pill" id="d-pill">—</span>
+              </div>
+              <div class="d-body scroll" id="d-body"></div>
+              <div class="d-foot">
+                <button class="btn btn-primary btn-sm" type="button" id="d-route" style="flex:1">Показать трек</button>
+                <button class="btn btn-ghost btn-sm" type="button" id="d-call">Связаться</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel events">
+          <div class="panel-head" style="padding:12px 18px">
+            <div><h3 style="font-size:13.5px">Последние события</h3></div>
+            <button class="btn btn-ghost btn-sm" type="button" style="margin-left:auto" data-goto="trips">Все события →</button>
+          </div>
+          <div class="ev-list" id="ev-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= РЕЙСЫ ================= -->
+      <section class="view" id="view-trips">
+        <div class="stats" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="stat v-violet"><div class="lbl">Рейсов сегодня</div><div class="val">36</div><div class="sub">план 40</div></div>
+          <div class="stat v-mint"><div class="lbl">Завершено</div><div class="val">21</div><div class="sub">58% плана</div></div>
+          <div class="stat v-blue"><div class="lbl">В работе</div><div class="val">8</div><div class="sub">на линии сейчас</div></div>
+          <div class="stat v-amber"><div class="lbl">Просрочено</div><div class="val">2</div><div class="sub"><b>требуют внимания</b></div></div>
+        </div>
+        <div class="panel tbl-wrap" style="display:grid; grid-template-rows:auto 1fr; min-height:0; overflow:hidden">
+          <div class="panel-head">
+            <div><h3>Рейсы · сегодня</h3><div class="sub">Постоянные и заказные задания</div></div>
+            <div class="seg" id="trip-seg">
+              <button class="on" type="button" data-f="all">Все</button>
+              <button type="button" data-f="run">В работе</button>
+              <button type="button" data-f="done">Завершены</button>
+              <button type="button" data-f="late">Просрочены</button>
+            </div>
+          </div>
+          <div class="scroll" style="min-height:0">
+            <table>
+              <thead><tr>
+                <th>Рейс</th><th>Машина / сотрудник</th><th>Источник</th><th>Тип задания</th><th>Точки</th><th>Прогресс</th><th>Статус</th>
+              </tr></thead>
+              <tbody id="trip-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ОТЧЁТЫ ================= -->
+      <section class="view" id="view-reports">
+        <div class="stats" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="stat v-mint"><div class="lbl">Заданий за неделю</div><div class="val">284</div><div class="sub">+12% к прошлой</div></div>
+          <div class="stat v-violet"><div class="lbl">Фотоотчётов</div><div class="val">561</div><div class="sub">98.6% заданий</div></div>
+          <div class="stat v-blue"><div class="lbl">Средний пробег</div><div class="val">87 км</div><div class="sub">на машину в день</div></div>
+          <div class="stat v-amber"><div class="lbl">Нарушений</div><div class="val">9</div><div class="sub"><b>длительные остановки</b></div></div>
+        </div>
+        <div class="rep-grid">
+          <div class="panel chart" style="display:grid; grid-template-rows:auto 1fr; min-height:0">
+            <div>
+              <h3 style="font-size:14.5px">Выполнено заданий по дням</h3>
+              <div class="sub" style="font-size:11.5px; color:var(--text-mute); margin-top:3px">Последние 7 дней · все источники координат</div>
+            </div>
+            <div class="chart-area" id="chart"></div>
+          </div>
+          <div class="panel scroll" style="min-height:0">
+            <div class="panel-head"><div><h3>Карточка задания №1254</h3><div class="sub">Сформирована автоматически после завершения</div></div></div>
+            <div style="padding:16px 18px">
+              <div class="d-row"><span>Сотрудник</span><b>Иванов А.</b></div>
+              <div class="d-row"><span>Автомобиль</span><b class="mono">123 ABC 02</b></div>
+              <div class="d-row"><span>Тип</span><b>Заказной вывоз</b></div>
+              <div class="d-row"><span>Объект</span><b>Мамыр-4, 117/3</b></div>
+              <div class="sect-t">Время</div>
+              <div class="timeline">
+                <div class="tl done">Назначено · <b>14:00</b></div>
+                <div class="tl done">Прибыл · <b>14:07</b></div>
+                <div class="tl done">Начало работы · <b>14:10</b></div>
+                <div class="tl done">Завершение · <b>14:25</b></div>
+              </div>
+              <div class="sect-t">Подтверждение</div>
+              <div class="check"><span class="b y">✓</span>Геолокация зафиксирована</div>
+              <div class="check"><span class="b y">✓</span>Фактический маршрут сохранён</div>
+              <div class="check"><span class="b y">✓</span>Фото ДО · 14:09 · 43.2337, 76.8721</div>
+              <div class="check"><span class="b y">✓</span>Фото ПОСЛЕ · 14:24 · 43.2337, 76.8721</div>
+              <div style="display:flex; gap:8px; margin-top:16px">
+                <button class="btn btn-primary btn-sm" type="button" data-toast="Отчёт выгружен в PDF (демо)">Выгрузить PDF</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-toast="Ссылка на отчёт скопирована (демо)">Поделиться</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= УПРАВЛЕНИЕ ================= -->
+      <section class="view" id="view-manage">
+        <div class="panel-head" style="border:none; padding:0 0 4px">
+          <div><h3 style="font-size:16px">Настройки компании</h3><div class="sub">Пороги контроля, источники координат и доступы</div></div>
+          <button class="btn btn-mint btn-sm" type="button" style="margin-left:auto" data-toast="Настройки сохранены (демо)">Сохранить</button>
+        </div>
+        <div class="set-grid scroll" style="min-height:0">
+          <div class="panel set-card">
+            <h3 style="font-size:14px; margin-bottom:6px">Модуль контроля остановок</h3>
+            <p style="font-size:12.5px; color:var(--text-mute); line-height:1.5; margin-bottom:8px">Событие создаётся, если движения нет дольше порога. В геозоне назначенного объекта остановка считается рабочим временем.</p>
+            <div class="set-row"><div><div class="t1">🟡 Предупреждение</div><div class="t2">минут без движения</div></div><input class="num-in" type="number" value="20" min="5" max="240"></div>
+            <div class="set-row"><div><div class="t1">🟠 Критическая остановка</div><div class="t2">минут без движения</div></div><input class="num-in" type="number" value="30" min="5" max="240"></div>
+            <div class="set-row"><div><div class="t1">🔴 Серьёзное нарушение</div><div class="t2">минут без движения</div></div><input class="num-in" type="number" value="60" min="5" max="240"></div>
+            <div class="set-row"><div><div class="t1">Учитывать геозону объекта</div><div class="t2">не считать нарушением работу на точке</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+            <div class="set-row"><div><div class="t1">Push диспетчеру</div><div class="t2">мгновенное уведомление о событии</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+          </div>
+          <div class="panel set-card">
+            <h3 style="font-size:14px; margin-bottom:6px">Источники координат</h3>
+            <p style="font-size:12.5px; color:var(--text-mute); line-height:1.5; margin-bottom:8px">Один бэкенд принимает данные и с GPS-трекеров, и со смартфонов сотрудников.</p>
+            <div class="set-row"><div><div class="t1">GPS-трекеры</div><div class="t2">28 устройств · интервал 15 сек</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+            <div class="set-row"><div><div class="t1">Смартфоны сотрудников</div><div class="t2">20 устройств · фоновая геолокация</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+            <div class="set-row"><div><div class="t1">Интервал передачи с телефона</div><div class="t2">секунд между координатами</div></div><input class="num-in" type="number" value="30" min="5" max="300"></div>
+            <div class="set-row"><div><div class="t1">Экономия батареи</div><div class="t2">реже опрашивать на стоянке</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+          </div>
+          <div class="panel set-card">
+            <h3 style="font-size:14px; margin-bottom:6px">Фотоотчётность</h3>
+            <p style="font-size:12.5px; color:var(--text-mute); line-height:1.5; margin-bottom:8px">Обязательные снимки и метаданные, которые сохраняет система.</p>
+            <div class="set-row"><div><div class="t1">Фото ДО обязательно</div><div class="t2">блокировать старт без снимка</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+            <div class="set-row"><div><div class="t1">Фото ПОСЛЕ обязательно</div><div class="t2">блокировать завершение без снимка</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+            <div class="set-row"><div><div class="t1">Только камера (без галереи)</div><div class="t2">запрет загрузки старых фото</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+            <div class="set-row"><div><div class="t1">Хранить координаты и время</div><div class="t2">где, когда, кто, что сделал</div></div><button class="switch on" type="button" role="switch" aria-checked="true"></button></div>
+          </div>
+          <div class="panel set-card">
+            <h3 style="font-size:14px; margin-bottom:6px">Типы заданий</h3>
+            <p style="font-size:12.5px; color:var(--text-mute); line-height:1.5; margin-bottom:8px">Категории настраиваются под бизнес клиента.</p>
+            <div class="set-row"><div><div class="t1">🗑 Заказной вывоз</div><div class="t2">разовая заявка · 30 мин</div></div><button class="btn btn-ghost btn-sm" type="button" data-toast="Редактирование типа задания (демо)">Изменить</button></div>
+            <div class="set-row"><div><div class="t1">🔄 Постоянный вывоз</div><div class="t2">график пн/ср/пт · 25 точек</div></div><button class="btn btn-ghost btn-sm" type="button" data-toast="Редактирование типа задания (демо)">Изменить</button></div>
+            <div class="set-row"><div><div class="t1">🚚 Доставка</div><div class="t2">вода и продукция · 20 мин</div></div><button class="btn btn-ghost btn-sm" type="button" data-toast="Редактирование типа задания (демо)">Изменить</button></div>
+            <div class="set-row"><div><div class="t1">🔧 Выездная работа</div><div class="t2">сервис на объекте · 45 мин</div></div><button class="btn btn-ghost btn-sm" type="button" data-toast="Редактирование типа задания (демо)">Изменить</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ТВ-РЕЖИМ ================= -->
+      <section class="view" id="view-tv">
+        <div>
+          <div class="tv-head">
+            <span class="brand" style="padding:0"><span class="mark">366</span><span class="nm">TECH FLEET</span></span>
+            <h2 style="margin-left:8px">Автопарк в реальном времени</h2>
+            <span class="chip-live" style="margin-left:auto"><i></i><span id="tv-clock">--:--</span></span>
+            <button class="btn btn-ghost btn-sm" type="button" id="tv-leave">Выйти</button>
+          </div>
+          <div class="tv-stats" id="tv-stats"></div>
+        </div>
+        <div class="tv-body">
+          <div class="panel" style="overflow:hidden; display:grid; grid-template-rows:auto 1fr; min-height:0">
+            <div class="panel-head"><div><h3>Карта смены</h3><div class="sub">Переключитесь во вкладку «Карта» для управления</div></div></div>
+            <div id="tv-map-slot" style="position:relative; min-height:0"></div>
+          </div>
+          <div class="panel scroll" style="min-height:0">
+            <div class="panel-head"><div><h3>Требуют внимания</h3><div class="sub">Система сама находит проблему</div></div></div>
+            <div id="tv-alerts" style="padding:10px"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* =========================================================
+   366TECH FLEET — демо диспетчерской панели
+   ========================================================= */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- статусы ---------------- */
+const STATUS = {
+  work:    { color:'#2fe0ac', label:'Выполняет задание', short:'На объекте' },
+  moving:  { color:'#4c9bff', label:'Движется',          short:'В движении' },
+  idle:    { color:'#f6ab3f', label:'Остановился',       short:'Стоит' },
+  alert:   { color:'#ff5c7a', label:'Проблема / просрочка', short:'Нарушение' },
+  offline: { color:'#5a5f73', label:'Офлайн',            short:'Нет связи' },
+};
+const SRC = {
+  gps:   { label:'GPS-трекер', cls:'gps',   icon:'<svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="4"/></svg>' },
+  phone: { label:'Смартфон сотрудника', cls:'phone', icon:'<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>' },
+};
+
+/* ---------------- данные ---------------- */
+const fleet = [
+  { id:'01', plate:'702 AB 02', driver:'Арман К.',   src:'gps',   status:'work',    speed:0,  lat:43.2405, lng:76.9285, task:'№1601', type:'Заказной вывоз',   obj:'Мамыр-4, 117/3',      addr:'Мамыр-4, 117/3',       before:true,  after:false, progress:65, times:['14:00','14:07','14:10','—'], stop:'8 мин на объекте' },
+  { id:'07', plate:'118 AC 02', driver:'Данияр С.',  src:'gps',   status:'moving',  speed:38, lat:43.2555, lng:76.9455, task:'№1598', type:'Доставка воды',    obj:'ул. Толе би, 59',      addr:'ул. Толе би / Достык', before:false, after:false, progress:35, times:['13:30','—','—','—'],       stop:'—' },
+  { id:'12', plate:'366 BX 02', driver:'Ерлан Т.',   src:'gps',   status:'alert',   speed:0,  lat:43.2465, lng:76.9105, task:'№1548', type:'Постоянный вывоз', obj:'ул. Ауэзова, 106',     addr:'ул. Ауэзова, 106',     before:true,  after:false, progress:48, times:['13:40','13:52','13:55','—'], stop:'28 минут · вне объекта' },
+  { id:'04', plate:'910 KM 02', driver:'Марат Ж.',   src:'gps',   status:'offline', speed:0,  lat:43.2210, lng:76.9060, task:'—',     type:'—',                obj:'Депо',                 addr:'Каныша Сатпаева, депо', before:false, after:false, progress:0,  times:['—','—','—','—'],           stop:'Нет координат 14 мин' },
+  { id:'23', plate:'204 EA 02', driver:'Асель Н.',   src:'phone', status:'moving',  speed:46, lat:43.2620, lng:76.9330, task:'№1612', type:'Курьерская доставка', obj:'Жибек Жолы, 64',    addr:'Жибек Жолы / Зенкова', before:false, after:false, progress:20, times:['14:10','—','—','—'],       stop:'—' },
+  { id:'31', plate:'557 KZ 02', driver:'Бекзат О.',  src:'phone', status:'idle',    speed:0,  lat:43.2325, lng:76.9520, task:'№1605', type:'Выездная работа',  obj:'пр. Аль-Фараби, 77',   addr:'пр. Аль-Фараби, 77',   before:true,  after:false, progress:55, times:['13:20','13:41','13:45','—'], stop:'12 минут на объекте' },
+  { id:'44', plate:'Курьер · б/н', driver:'Айгерим Д.', src:'phone', status:'work', speed:0,  lat:43.2510, lng:76.9210, task:'№1620', type:'Курьерская доставка', obj:'ул. Сейфуллина, 458', addr:'ул. Сейфуллина, 458', before:true,  after:true,  progress:90, times:['14:20','14:33','14:35','—'], stop:'5 мин на адресе' },
+  { id:'09', plate:'145 TX 02', driver:'Нурлан С.',  src:'gps',   status:'moving',  speed:52, lat:43.2290, lng:76.9395, task:'№1588', type:'Сервисная выездная работа', obj:'мкр. Орбита-3, 14', addr:'пр. Аль-Фараби / Розыбакиева', before:false, after:false, progress:15, times:['14:05','—','—','—'], stop:'—' },
+];
+
+const events = [
+  { t:'18:42', kind:'warn',  t1:'ТС №12 стоит более 20 минут',  t2:'366 BX 02 · ул. Ауэзова, 106', focus:'366 BX 02' },
+  { t:'18:38', kind:'ok',    t1:'Рейс успешно завершён',        t2:'118 AC 02 · заказ №2841',      focus:'118 AC 02' },
+  { t:'18:31', kind:'alert', t1:'Отклонение от маршрута',       t2:'204 EA 02 · 1.2 км',           focus:'204 EA 02' },
+];
+
+const trips = [
+  { no:'№1601', veh:'702 AB 02 · Арман К.',   src:'gps',   type:'Заказной вывоз',   pts:'3 из 5',  pr:65,  st:'run'  },
+  { no:'№1598', veh:'118 AC 02 · Данияр С.',  src:'gps',   type:'Доставка воды',    pts:'2 из 6',  pr:35,  st:'run'  },
+  { no:'№1548', veh:'366 BX 02 · Ерлан Т.',   src:'gps',   type:'Постоянный вывоз', pts:'12 из 25',pr:48,  st:'late' },
+  { no:'№1612', veh:'204 EA 02 · Асель Н.',   src:'phone', type:'Курьерская доставка', pts:'1 из 9', pr:20, st:'run' },
+  { no:'№1605', veh:'557 KZ 02 · Бекзат О.',  src:'phone', type:'Выездная работа',  pts:'3 из 4',  pr:55,  st:'run'  },
+  { no:'№1620', veh:'Курьер · Айгерим Д.',    src:'phone', type:'Курьерская доставка', pts:'8 из 9', pr:90, st:'run' },
+  { no:'№1588', veh:'145 TX 02 · Нурлан С.',  src:'gps',   type:'Сервисная работа', pts:'0 из 3',  pr:15,  st:'run'  },
+  { no:'№1541', veh:'803 CC 02 · Жанна К.',   src:'gps',   type:'Постоянный вывоз', pts:'25 из 25',pr:100, st:'done' },
+  { no:'№1533', veh:'118 AC 02 · Данияр С.',  src:'gps',   type:'Доставка воды',    pts:'6 из 6',  pr:100, st:'done' },
+  { no:'№1527', veh:'910 KM 02 · Марат Ж.',   src:'gps',   type:'Постоянный вывоз', pts:'4 из 18', pr:22,  st:'late' },
+];
+
+const chartData = [
+  { d:'Пн', v:38 }, { d:'Вт', v:45 }, { d:'Ср', v:52 }, { d:'Чт', v:41 },
+  { d:'Пт', v:56 }, { d:'Сб', v:33 }, { d:'Вс', v:19 },
+];
+
+const state = { filter:'all', query:'', selected:null, view:'map' };
+
+/* ---------------- статистика ---------------- */
+function stats(){
+  const TOTAL = 48, BASE_ONLINE = 35, BASE_MOVING = 26;   // парк клиента + 8 демо-объектов
+  const online  = BASE_ONLINE + fleet.filter(v => v.status !== 'offline').length;
+  const moving  = BASE_MOVING + fleet.filter(v => v.status === 'moving').length;
+  const stopped = online - moving;
+  const offline = TOTAL - online;
+  const attention = fleet.filter(v => v.status === 'alert').length;
+  return [
+    { lbl:'Всего ТС',   val:TOTAL,   cls:'v-violet', sub:'+3 за месяц' },
+    { lbl:'На линии',   val:online,  cls:'v-mint',   sub:Math.round(online / TOTAL * 100) + '% парка' },
+    { lbl:'В движении', val:moving,  cls:'v-blue',   sub:Math.round(moving / online * 100) + '% на линии' },
+    { lbl:'Стоят',      val:stopped, cls:'v-amber',  sub:attention ? '<b>' + attention + ' требует внимания</b>' : 'в пределах нормы' },
+    { lbl:'Офлайн',     val:offline, cls:'v-grey',   sub:'связь потеряна' },
+  ];
+}
+function renderStats(){
+  const html = stats().map(s => `
+    <div class="stat ${s.cls}">
+      <div class="lbl">${s.lbl}</div>
+      <div class="val">${s.val}</div>
+      <div class="sub">${s.sub}</div>
+    </div>`).join('');
+  $('#stats').innerHTML = html;
+  $('#tv-stats').innerHTML = stats().slice(0,4).map(s => `
+    <div class="stat ${s.cls}">
+      <div class="lbl">${s.lbl}</div>
+      <div class="val">${s.val}</div>
+      <div class="sub">${s.sub}</div>
+    </div>`).join('');
+}
+
+/* ---------------- список транспорта ---------------- */
+function matches(v){
+  const q = state.query.trim().toLowerCase();
+  if(q && !(v.plate + ' ' + v.driver + ' ' + v.task + ' ' + v.type + ' ' + v.addr).toLowerCase().includes(q)) return false;
+  switch(state.filter){
+    case 'move':  return v.status === 'moving';
+    case 'stop':  return v.status === 'idle' || v.status === 'alert' || v.status === 'work';
+    case 'gps':   return v.src === 'gps';
+    case 'phone': return v.src === 'phone';
+    default:      return true;
+  }
+}
+function renderList(){
+  const list = fleet.filter(matches);
+  $('#rail-count').textContent = list.length + ' из ' + fleet.length + ' объектов на связи';
+  $('#veh-list').innerHTML = list.length ? list.map(v => {
+    const st = STATUS[v.status];
+    return `<button class="veh ${state.selected === v.plate ? 'sel' : ''}" type="button" data-plate="${v.plate}">
+      <span class="no">${v.id}</span>
+      <span class="txt">
+        <span class="p1">${v.plate}
+          <span class="src ${SRC[v.src].cls}" title="${SRC[v.src].label}">${SRC[v.src].icon}</span>
+        </span>
+        <span class="p2">${v.driver} · ${v.type === '—' ? 'Без задания' : v.type}</span>
+      </span>
+      <span class="right">
+        <span class="sp" style="color:${st.color}">${v.status === 'moving' ? v.speed + ' км/ч' : (v.status === 'offline' ? '—' : '0 км/ч')}</span>
+        <span class="st">${st.short}</span>
+      </span>
+    </button>`;
+  }).join('') : '<div class="empty">Ничего не найдено.<br>Измените фильтр или запрос.</div>';
+
+  $$('#veh-list .veh').forEach(b => b.addEventListener('click', () => select(b.dataset.plate, true)));
+}
+
+/* ---------------- события ---------------- */
+function renderEvents(){
+  const ic = { warn:['rgba(246,171,63,.16)','#f6ab3f','⚠'], ok:['rgba(47,224,172,.14)','#2fe0ac','✓'], alert:['rgba(255,92,122,.14)','#ff5c7a','!'] };
+  $('#ev-list').innerHTML = events.map(e => {
+    const [bg, c, s] = ic[e.kind];
+    return `<button class="ev" type="button" data-focus="${e.focus}">
+      <span class="t">${e.t}</span>
+      <span class="ic" style="background:${bg}; color:${c}">${s}</span>
+      <span style="min-width:0"><span class="e1">${e.t1}</span><br><span class="e2">${e.t2}</span></span>
+      <span class="arr">›</span>
+    </button>`;
+  }).join('');
+  $$('#ev-list .ev').forEach(b => b.addEventListener('click', () => { goto('map'); select(b.dataset.focus, true); }));
+
+  $('#tv-alerts').innerHTML = fleet.filter(v => v.status === 'alert' || v.status === 'idle' || v.status === 'offline').map(v => {
+    const st = STATUS[v.status];
+    return `<div class="veh" style="cursor:default">
+      <span class="no" style="color:${st.color}">${v.id}</span>
+      <span class="txt"><span class="p1">${v.plate}</span><span class="p2">${v.stop}</span></span>
+      <span class="right"><span class="sp" style="color:${st.color}">${st.short}</span><span class="st">${v.driver}</span></span>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- рейсы ---------------- */
+function renderTrips(filter = 'all'){
+  const stMeta = {
+    run:  ['В работе',   'rgba(76,155,255,.14)', '#4c9bff'],
+    done: ['Завершён',   'rgba(47,224,172,.14)', '#2fe0ac'],
+    late: ['Просрочен',  'rgba(255,92,122,.14)', '#ff5c7a'],
+  };
+  $('#trip-body').innerHTML = trips.filter(t => filter === 'all' || t.st === filter).map(t => {
+    const [lbl, bg, c] = stMeta[t.st];
+    return `<tr data-focus="${t.veh.split(' · ')[0]}">
+      <td class="plate mono">${t.no}</td>
+      <td><span class="plate">${t.veh}</span></td>
+      <td><span class="src ${SRC[t.src].cls}" title="${SRC[t.src].label}">${SRC[t.src].icon}</span> <span style="font-size:12px; color:var(--text-mute)">${SRC[t.src].label}</span></td>
+      <td>${t.type}</td>
+      <td class="mono">${t.pts}</td>
+      <td><span class="bar"><i style="width:${t.pr}%"></i></span> <span style="font-size:12px">${t.pr}%</span></td>
+      <td><span class="tag" style="background:${bg}; color:${c}">${lbl}</span></td>
+    </tr>`;
+  }).join('');
+  $$('#trip-body tr').forEach(tr => tr.addEventListener('click', () => { goto('map'); select(tr.dataset.focus, true); }));
+}
+
+/* ---------------- график отчётов ---------------- */
+function renderChart(){
+  const max = Math.max(...chartData.map(c => c.v));
+  $('#chart').innerHTML = chartData.map(c => `
+    <div class="chart-col">
+      <div class="num">${c.v}</div>
+      <div class="chart-bar" style="height:${Math.round(c.v / max * 140)}px">
+        <span class="chart-tip">${c.d}: ${c.v} заданий</span>
+      </div>
+      <div class="cap">${c.d}</div>
+    </div>`).join('');
+}
+
+/* ---------------- карта ---------------- */
+let map = null, markers = {}, track = null;
+const hasLeaflet = typeof L !== 'undefined' && L && typeof L.map === 'function';
+
+function markerIcon(v, selected){
+  const st = STATUS[v.status];
+  const ring = (v.status === 'moving' || v.status === 'work') && !reduceMotion ? '<span class="ring"></span>' : '';
+  return L.divIcon({
+    className:'',
+    html:`<span class="mk ${selected ? 'sel' : ''}" style="color:${st.color}">${ring}<span class="core" style="background:${st.color}"></span></span>`,
+    iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-10],
+  });
+}
+function popupHtml(v){
+  const st = STATUS[v.status];
+  return `<div class="pop-t">${v.plate} · ${v.driver}</div>
+    <div class="pop-r"><span>Статус</span><b style="color:${st.color}">${st.label}</b></div>
+    <div class="pop-r"><span>Источник</span><b>${SRC[v.src].label}</b></div>
+    <div class="pop-r"><span>Скорость</span><b>${v.status === 'moving' ? v.speed + ' км/ч' : '0 км/ч'}</b></div>
+    <div class="pop-r"><span>Задание</span><b>${v.task}</b></div>
+    <div class="pop-r"><span>Фото ДО / ПОСЛЕ</span><b>${v.before ? '✅' : '⏳'} / ${v.after ? '✅' : '⏳'}</b></div>
+    <button class="pop-btn" type="button" onclick="select('${v.plate}', false)">Открыть карточку</button>`;
+}
+function initMap(){
+  if(!hasLeaflet){ $('#map-fallback').style.display = 'flex'; return; }
+  map = L.map('map', { zoomControl:true, attributionControl:true }).setView([43.2420, 76.9280], 12.4);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom:19, attribution:'&copy; OpenStreetMap &copy; CARTO',
+  }).addTo(map);
+  fleet.forEach(v => {
+    const m = L.marker([v.lat, v.lng], { icon: markerIcon(v, false) }).addTo(map);
+    m.bindPopup(popupHtml(v));
+    m.on('click', () => select(v.plate, false));
+    markers[v.plate] = m;
+  });
+}
+function refreshMarkers(){
+  if(!map) return;
+  fleet.forEach(v => {
+    const m = markers[v.plate];
+    if(!m) return;
+    m.setLatLng([v.lat, v.lng]);
+    m.setIcon(markerIcon(v, state.selected === v.plate));
+    if(m.getPopup) m.setPopupContent && m.setPopupContent(popupHtml(v));
+    const visible = state.filter === 'all' ? true : matches(v);
+    if(m._icon) m._icon.style.display = visible ? '' : 'none';
+  });
+}
+function showTrack(v){
+  if(!map || !L.polyline) return;
+  const pts = [];
+  for(let i = 8; i >= 0; i--) pts.push([v.lat - i * 0.0032 + Math.sin(i) * 0.0012, v.lng - i * 0.0045 + Math.cos(i) * 0.0016]);
+  pts.push([v.lat, v.lng]);
+  if(track) map.removeLayer(track);
+  track = L.polyline(pts, { color:'#8b5cf6', weight:3, opacity:.9, dashArray:'1 8', lineCap:'round' }).addTo(map);
+  if(map.fitBounds && track.getBounds) map.fitBounds(track.getBounds(), { padding:[60,60] });
+  toast('Фактический трек за смену построен');
+}
+
+/* ---------------- карточка объекта ---------------- */
+function select(plate, fly){
+  const v = fleet.find(x => x.plate === plate) || fleet.find(x => x.plate.startsWith(plate));
+  if(!v) return;
+  state.selected = v.plate;
+  renderList();
+  refreshMarkers();
+  renderDetail(v);
+  if(map && markers[v.plate]){
+    if(fly && map.flyTo) map.flyTo([v.lat, v.lng], 14, { duration:.7 });
+    markers[v.plate].openPopup && markers[v.plate].openPopup();
+  }
+}
+function renderDetail(v){
+  const st = STATUS[v.status];
+  $('#detail').classList.add('open');
+  $('#d-title').textContent = v.plate;
+  $('#d-sub').textContent = v.driver + ' · ' + SRC[v.src].label;
+  const pill = $('#d-pill');
+  pill.textContent = st.label;
+  pill.style.background = st.color + '22';
+  pill.style.color = st.color;
+
+  const t = v.times;
+  $('#d-body').innerHTML = `
+    <div class="d-row"><span>Задание</span><b>${v.task} · ${v.type}</b></div>
+    <div class="d-row"><span>Объект</span><b>${v.obj}</b></div>
+    <div class="d-row"><span>Адрес сейчас</span><b>${v.addr}</b></div>
+    <div class="d-row"><span>Скорость</span><b>${v.status === 'moving' ? v.speed + ' км/ч' : '0 км/ч'}</b></div>
+    <div class="d-row"><span>Остановка</span><b style="color:${v.status === 'alert' ? 'var(--amber)' : 'inherit'}">${v.stop}</b></div>
+    <div class="d-row"><span>Координаты</span><b class="mono">${v.lat.toFixed(4)}, ${v.lng.toFixed(4)}</b></div>
+
+    <div class="sect-t">Выполнение задания</div>
+    <div class="progress"><i style="width:${v.progress}%"></i></div>
+    <div style="font-size:11.5px; color:var(--text-mute); margin-top:6px">${v.progress}% выполнено</div>
+
+    <div class="sect-t">Хронология</div>
+    <div class="timeline">
+      <div class="tl ${t[0] !== '—' ? 'done' : ''}">Назначено · <b>${t[0]}</b></div>
+      <div class="tl ${t[1] !== '—' ? 'done' : ''}">Прибыл · <b>${t[1]}</b></div>
+      <div class="tl ${t[2] !== '—' ? 'done' : ''}">Начало работы · <b>${t[2]}</b></div>
+      <div class="tl ${t[3] !== '—' ? 'done' : ''}">Завершение · <b>${t[3]}</b></div>
+    </div>
+
+    <div class="sect-t">Фотоотчётность</div>
+    <div class="photos">
+      <div class="photo ${v.before ? 'ok' : 'no'}">
+        <div class="ph">${v.before ? '🖼' : '📷'}</div>
+        <div class="cap">Фото ДО</div>
+        <div class="meta">${v.before ? 'Принято · гео + время' : 'Ожидается от сотрудника'}</div>
+      </div>
+      <div class="photo ${v.after ? 'ok' : 'no'}">
+        <div class="ph">${v.after ? '🖼' : '📷'}</div>
+        <div class="cap">Фото ПОСЛЕ</div>
+        <div class="meta">${v.after ? 'Принято · гео + время' : 'Ожидается от сотрудника'}</div>
+      </div>
+    </div>
+
+    <div class="sect-t">Подтверждение</div>
+    <div class="check"><span class="b ${v.status !== 'offline' ? 'y' : 'n'}">${v.status !== 'offline' ? '✓' : '✕'}</span>Геолокация ${v.status !== 'offline' ? 'поступает' : 'недоступна'} (${SRC[v.src].label})</div>
+    <div class="check"><span class="b ${v.before ? 'y' : 'n'}">${v.before ? '✓' : '✕'}</span>Фото ДО</div>
+    <div class="check"><span class="b ${v.after ? 'y' : 'n'}">${v.after ? '✓' : '✕'}</span>Фото ПОСЛЕ</div>
+  `;
+}
+function closeDetail(){ $('#detail').classList.remove('open'); state.selected = null; renderList(); refreshMarkers(); }
+
+/* ---------------- вкладки ---------------- */
+/* карта одна на всё приложение: в ТВ-режиме переносим её в большой экран */
+function moveMap(toTv){
+  const el = $('#map'), slot = $('#tv-map-slot'), panel = $('.map-panel');
+  if(!el || !slot || !panel) return;
+  const target = toTv ? slot : panel;
+  if(el.parentNode === target) return;
+  if(toTv) slot.appendChild(el);
+  else panel.insertBefore(el, $('#map-fallback'));
+}
+function goto(view){
+  state.view = view;
+  $$('#nav .nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  $$('.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + view));
+  const titles = { map:'Карта', trips:'Рейсы', reports:'Отчёты', manage:'Управление', tv:'ТВ-режим' };
+  $('#view-title').textContent = titles[view] || 'Карта';
+  document.body.classList.toggle('tv', view === 'tv');
+  $('#tv-exit').style.display = view === 'tv' ? 'flex' : 'none';
+  moveMap(view === 'tv');
+  if((view === 'map' || view === 'tv') && map && map.invalidateSize) setTimeout(() => map.invalidateSize(), 140);
+}
+$$('#nav .nav-btn').forEach(b => b.addEventListener('click', () => goto(b.dataset.view)));
+$$('[data-goto]').forEach(b => b.addEventListener('click', () => goto(b.dataset.goto)));
+$('#tv-leave').addEventListener('click', () => goto('map'));
+$('#tv-exit').addEventListener('click', () => goto('map'));
+
+/* ---------------- фильтры / поиск ---------------- */
+function setFilter(f){
+  state.filter = f;
+  $$('#rail-chips .chip').forEach(c => c.classList.toggle('on', c.dataset.f === f));
+  $$('#map-seg button').forEach(c => c.classList.toggle('on', c.dataset.f === f));
+  renderList(); refreshMarkers();
+}
+$$('#rail-chips .chip').forEach(c => c.addEventListener('click', () => setFilter(c.dataset.f)));
+$$('#map-seg button').forEach(c => c.addEventListener('click', () => setFilter(c.dataset.f)));
+$('#rail-search').addEventListener('input', e => { state.query = e.target.value; renderList(); refreshMarkers(); });
+$('#top-search').addEventListener('input', e => {
+  state.query = e.target.value; $('#rail-search').value = e.target.value;
+  goto('map'); renderList(); refreshMarkers();
+});
+$$('#trip-seg button').forEach(b => b.addEventListener('click', () => {
+  $$('#trip-seg button').forEach(x => x.classList.toggle('on', x === b));
+  renderTrips(b.dataset.f);
+}));
+$('#detail-back').addEventListener('click', closeDetail);
+$('#d-route').addEventListener('click', () => {
+  const v = fleet.find(x => x.plate === state.selected);
+  if(v) showTrack(v);
+});
+$('#d-call').addEventListener('click', () => toast('Звонок водителю — в демо недоступен'));
+
+/* ---------------- уведомления ---------------- */
+const notif = $('#notif');
+$('#bell').addEventListener('click', e => { e.stopPropagation(); notif.classList.toggle('open'); });
+document.addEventListener('click', e => { if(!notif.contains(e.target)) notif.classList.remove('open'); });
+$$('#notif .n-item').forEach(b => b.addEventListener('click', () => {
+  notif.classList.remove('open'); goto('map'); select(b.dataset.focus, true);
+}));
+
+/* ---------------- алерт контроля остановок ---------------- */
+const alertPop = $('#stop-alert');
+setTimeout(() => alertPop.classList.add('show'), 2200);
+$('#alert-close').addEventListener('click', () => alertPop.classList.remove('show'));
+$('#alert-open').addEventListener('click', () => { select('366 BX 02', true); });
+$('#alert-ok').addEventListener('click', () => {
+  const v = fleet.find(x => x.plate === '366 BX 02');
+  if(v){ v.status = 'work'; v.stop = 'Работа на объекте · 28 минут'; }
+  alertPop.classList.remove('show');
+  $('#bell-badge').textContent = '2';
+  renderStats(); renderList(); refreshMarkers(); renderEvents();
+  if(state.selected === '366 BX 02') renderDetail(v);
+  toast('Остановка отмечена как рабочее время');
+});
+
+/* ---------------- переключатели и тосты ---------------- */
+$$('.switch').forEach(s => s.addEventListener('click', () => {
+  const on = s.classList.toggle('on');
+  s.setAttribute('aria-checked', String(on));
+}));
+$$('[data-toast]').forEach(b => b.addEventListener('click', () => toast(b.dataset.toast)));
+$('#help-btn').addEventListener('click', () => toast('Поддержка: +7 (778) 999-02-03'));
+let toastTimer = null;
+function toast(msg){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ---------------- «живые» данные ---------------- */
+let tick = 0;
+function simulate(){
+  tick++;
+  fleet.forEach(v => {
+    if(v.status === 'moving'){
+      v.lat += (Math.random() - .45) * 0.0016;
+      v.lng += (Math.random() - .45) * 0.0022;
+      v.speed = Math.max(18, Math.min(72, v.speed + Math.round((Math.random() - .5) * 8)));
+    }
+  });
+  $('#upd').textContent = 'Обновлено ' + (tick % 2 ? 'только что' : '3 сек назад');
+  refreshMarkers();
+  if(state.view === 'map') renderList();
+}
+if(!reduceMotion) setInterval(simulate, 3000);
+
+function clock(){
+  const d = new Date();
+  $('#tv-clock').textContent = d.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+}
+clock(); setInterval(clock, 20000);
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    notif.classList.remove('open');
+    if(document.body.classList.contains('tv')) goto('map');
+    else if($('#detail').classList.contains('open')) closeDetail();
+  }
+});
+
+/* ---------------- старт ---------------- */
+renderStats();
+renderList();
+renderEvents();
+renderTrips('all');
+renderChart();
+initMap();
+window.select = select;
+</script>
+</body>
+</html>
