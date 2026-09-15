@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>366TECH FLEET — контроль выездных работ и транспорта</title>
+<title>366TECH FLEET — контроль транспорта и выездных работ</title>
 <meta name="description" content="Премиальная платформа контроля автопарка и выездных сотрудников: координаты с GPS-трекера или смартфона, маршруты, фото ДО/ПОСЛЕ, контроль длительных остановок.">
 <meta property="og:title" content="366TECH FLEET — контроль каждого движения автопарка">
 <meta property="og:description" content="GPS-трекер или смартфон сотрудника — одна панель диспетчера, маршруты, фотоотчётность и автоматические нарушения.">
@@ -157,7 +157,7 @@ header.hide{transform:translateY(-140%); opacity:0}
   -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 14%, #000 72%, transparent 93%);
           mask-image:linear-gradient(to bottom, transparent 0%, #000 14%, #000 72%, transparent 93%);
 }
-.route-thread.on{opacity:.75}
+.route-thread.on{opacity:.4}
 .route-thread path{fill:none; stroke-linecap:round; stroke-linejoin:round}
 .route-thread .ghost{stroke:rgba(139,92,246,.13); stroke-width:2}
 .route-thread .live{stroke:url(#threadGrad); stroke-width:2.4; filter:drop-shadow(0 0 7px rgba(139,92,246,.9))}
@@ -171,41 +171,35 @@ main{position:relative; z-index:2}
 .scene{position:relative}
 .scene__stage{position:sticky; top:0; height:100svh; overflow:hidden; display:grid; place-items:center}
 #hero{height:300vh}
-/* --- единая 3D-сцена: заголовок, медиа и панель живут в одной камере --- */
-.hero-scene{position:absolute; inset:0; perspective:1500px; perspective-origin:50% 44%; transform-style:preserve-3d}
-.hero-cam{
-  position:absolute; inset:0; transform-style:preserve-3d; will-change:transform;
-  transform:translate3d(0,var(--cam-y,0px),var(--cam-z,0px)) rotateX(var(--cam-rx,0deg)) scale(var(--cam-s,1));
+/* --- герой: фон-видео + резкий текст, без 3D-слоёв --- */
+.hero-bg{
+  position:absolute; inset:-7%; z-index:0; overflow:hidden; pointer-events:none;
+  transform:scale(var(--bg-s,1)); filter:blur(var(--bg-b,3px));
+  will-change:transform, filter; background:#05070c;
 }
-.hero-layer{position:absolute; inset:0; display:grid; place-items:center; transform-style:preserve-3d}
-.layer-media{transform:translateZ(-700px) scale(1.52)}
-.layer-scrim{transform:translateZ(-200px) scale(1.15)}
-.layer-copy{transform:translateZ(-20px)}
-.layer-panel{transform:translateZ(calc(170px + var(--panel-z,0px))) scale(.88)}
-.hero-media{position:absolute; inset:-4%; z-index:0}
-#city{position:absolute; inset:0; width:100%; height:100%; display:block}
 .hero-video{
   position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-  opacity:var(--video-o,.9); filter:saturate(116%) contrast(112%) brightness(.94);
+  opacity:var(--video-o,1); filter:saturate(112%) contrast(110%) brightness(.9);
 }
-/* фирменный грейд поверх съёмки: фиолет сверху, мята снизу */
-.hero-media .grade{
+.hero-bg .grade{
   position:absolute; inset:0; pointer-events:none; mix-blend-mode:overlay;
-  background:linear-gradient(162deg, rgba(139,92,246,.3) 0%, rgba(10,12,22,0) 46%, rgba(47,224,172,.18) 100%);
+  background:linear-gradient(165deg, rgba(139,92,246,.26) 0%, rgba(10,12,22,0) 48%, rgba(47,224,172,.14) 100%);
 }
-/* свечение над линией гор */
-.hero-media .horizon-glow{
-  position:absolute; left:-12%; right:-12%; top:22%; height:30%; pointer-events:none;
-  background:radial-gradient(ellipse at 50% 100%, rgba(139,92,246,.45), rgba(76,79,232,.12) 45%, transparent 72%);
-  filter:blur(34px); opacity:var(--video-o,.9);
+.hero-bg .horizon-glow{
+  position:absolute; left:-12%; right:-12%; top:18%; height:34%; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%, rgba(139,92,246,.42), rgba(76,79,232,.1) 46%, transparent 72%);
+  filter:blur(42px);
 }
-.hero-scrim{position:absolute; inset:0; z-index:1; background:
-  radial-gradient(ellipse 74% 58% at 50% 42%, rgba(5,6,8,.12), rgba(5,6,8,.72) 82%),
-  linear-gradient(180deg, rgba(5,6,8,.72) 0%, rgba(5,6,8,.08) 38%, rgba(5,6,8,.88) 100%)}
+.hero-scrim{position:absolute; inset:0; z-index:1; pointer-events:none; background:
+  radial-gradient(ellipse 74% 58% at 50% 44%, rgba(5,6,8,.16), rgba(5,6,8,.7) 82%),
+  linear-gradient(180deg, rgba(5,6,8,.68) 0%, rgba(5,6,8,.1) 40%, rgba(5,6,8,.92) 100%)}
 .hero-copy{
   position:relative; z-index:3; text-align:center; max-width:1000px; padding-inline:24px;
-  opacity:var(--copy-o,1); filter:blur(var(--copy-b,0px)); will-change:opacity, filter;
+  opacity:var(--copy-o,1); transform:translate3d(0,var(--copy-y,0px),0);
+  will-change:transform, opacity;
 }
+/* панель диспетчера — ровно по центру экрана, поверх размытого фона */
+.hero-panel{position:absolute; inset:0; z-index:4; display:grid; place-items:center; padding:92px 24px 76px; pointer-events:none}
 .hero-copy h1{margin-top:22px}
 .hero-copy .lead{margin:22px auto 0; max-width:600px}
 .hero-actions{display:flex; gap:14px; justify-content:center; margin-top:32px; flex-wrap:wrap}
@@ -219,8 +213,9 @@ main{position:relative; z-index:2}
 
 /* dispatch-панель, в которую «влетает» камера */
 .dispatch{
-  position:relative; z-index:4; width:min(1060px,92vw); aspect-ratio:16/10; max-height:72svh;
-  opacity:var(--dash-o,0); will-change:opacity; pointer-events:none;
+  position:relative; width:min(1060px,92vw); aspect-ratio:16/10; max-height:70svh;
+  opacity:var(--dash-o,0); transform:translate3d(0,var(--dash-y,90px),0) scale(var(--dash-s,.95));
+  will-change:transform, opacity; pointer-events:none;
 }
 .dispatch.live{pointer-events:auto}
 .dispatch-in{position:absolute; inset:0; border-radius:var(--r-xl); overflow:hidden; display:grid; grid-template-rows:auto auto 1fr}
@@ -244,7 +239,8 @@ main{position:relative; z-index:2}
 
 /* ---------- тёмная карта Алматы (Leaflet) ---------- */
 .leaflet-container{background:#05070c !important; font-family:'Inter',sans-serif}
-.leaflet-tile{filter:brightness(.82) contrast(1.08) saturate(.85)}
+/* OpenStreetMap не требует ключа; тёмный вид делаем фильтром */
+.leaflet-tile{filter:invert(1) hue-rotate(190deg) saturate(.45) brightness(.72) contrast(1.05)}
 .leaflet-control-attribution{background:rgba(5,7,12,.6) !important; color:#4a5068 !important; font-size:9.5px !important; border-radius:6px 0 0 0}
 .leaflet-control-attribution a{color:#6b7186 !important}
 .leaflet-control-zoom a{background:#11131c !important; color:#eef0f6 !important; border-color:var(--hair) !important}
@@ -318,6 +314,12 @@ main{position:relative; z-index:2}
 .b-mint .ic{background:rgba(47,224,172,.16); color:var(--mint)}
 .b-blue .ic{background:rgba(76,155,255,.16); color:#7db4ff}
 .b-amber .ic{background:rgba(246,171,63,.16); color:var(--amber)}
+.badges{position:absolute; inset:0; z-index:5; pointer-events:none}
+/* на узких экранах карточки уезжают из кадра вниз и больше не наезжают друг на друга */
+.badges.flat{position:static; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:12px}
+.badges.flat .badge{position:static; max-width:none; width:100%; white-space:normal}
+.badges.flat .badge .t2{display:block}
+@media (max-width:560px){ .badges.flat .badge .ic{width:26px; height:26px} }
 .progress-line{position:absolute; left:24px; right:24px; bottom:22px; height:2px; background:rgba(255,255,255,.08); border-radius:2px; z-index:6; overflow:hidden}
 .progress-line i{display:block; height:100%; width:var(--dp,0%); background:linear-gradient(90deg,var(--violet),var(--mint))}
 
@@ -441,10 +443,17 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
 @media (max-width:1100px){
   .d-body{grid-template-columns:1fr 200px}
   .disp-grid{grid-template-columns:1fr; align-content:center; gap:22px; padding-top:88px}
-  .disp-steps{gap:0}
-  .step{display:none; opacity:1; transform:none}
-  .step.on{display:block}
-  .stage-frame{max-height:42svh}
+  /* на телефоне и планшете секция обычная: без пиннинга, всё по очереди сверху вниз */
+  #dispatching{height:auto}
+  #dispatching .scene__stage{position:static; height:auto; overflow:visible}
+  .disp-grid{position:static; display:block; padding:76px 18px 10px}
+  .disp-steps{gap:10px; margin-top:24px}
+  .step{display:block; opacity:1; transform:none; padding:16px 18px}
+  .stage-frame{max-height:46svh; margin-top:22px}
+  .badges.flat{grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px}
+  .badges.flat .badge{opacity:1; transform:none; padding:10px 12px}
+  .badges.flat .badge .t2{display:none}
+  .badges.flat .badge .t1{font-size:12px; white-space:normal}
   .cmp-grid{grid-template-columns:1fr}
   .cta-card{grid-template-columns:1fr}
 }
@@ -456,7 +465,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   .tv-grid{grid-template-columns:repeat(2,1fr)}
   .foot{grid-template-columns:1fr 1fr}
   #hero{height:240vh}
-  #dispatching{height:300vh}
+  #dispatching{height:auto}
   .badge{padding:8px 11px; border-radius:13px; max-width:min(250px,72%)}
   .badge .t2{display:none}
   .badge .t1{font-size:12px; white-space:normal}
@@ -476,7 +485,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
 /* =========================================================
    Производительность: GPU-слои и облегчение мобильных
    ========================================================= */
-.hero-cam, .layer-media, .layer-panel, .badge, .compare .after{will-change:transform}
+.hero-bg, .badge, .compare .after{will-change:transform}
 .stage-frame, .demo-panel, .dispatch-in, .mini-map, .d-map{transform:translateZ(0)}
 .compare{touch-action:none; contain:paint}
 .compare .after{will-change:clip-path; backface-visibility:hidden}
@@ -492,10 +501,9 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   .drawer-in{background:rgba(8,10,17,.97)}
   .badge{background:rgba(12,15,24,.95)}
   .tagpic{background:rgba(6,8,13,.92)}
-  .hero-scene{perspective:1300px}
-  .layer-media{transform:translateZ(-500px) scale(1.4)}
-  .layer-panel{transform:translateZ(calc(40px + var(--panel-z,0px))) scale(.84)}
-  .dispatch{width:min(1180px,92vw); aspect-ratio:auto; height:min(62svh,520px); max-height:none}
+  .hero-bg{filter:blur(var(--bg-b,4px))}
+  .hero-panel{padding:80px 16px 96px}
+  .dispatch{width:min(1180px,92vw); aspect-ratio:auto; height:min(60svh,500px); max-height:none}
   .d-stat{padding:11px 13px}
   .d-stat .v{font-size:21px}
   .d-stat .s{font-size:10.5px}
@@ -512,7 +520,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   .reveal{opacity:1 !important; transform:none !important; transition:none !important}
   .badge{opacity:1 !important; transform:none !important; transition:none !important}
   .btn:hover{transform:none}
-  .hero-copy{filter:none !important}
+  .hero-bg{filter:blur(4px) !important; transform:none !important}
 }
 </style>
 </head>
@@ -528,8 +536,8 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   <div class="nav">
     <a href="#top" class="brand"><span class="mark">366</span><b>TECH FLEET</b></a>
     <nav class="nav-links">
-      <a href="#dispatching">Диспетчеризация</a>
-      <a href="#control">Фотоконтроль</a>
+      <a href="#dispatching">Мониторинг</a>
+      <a href="#control">Фотоотчёты</a>
       <a href="#demo">Демо</a>
       <a href="#cta">Контакты</a>
     </nav>
@@ -541,8 +549,8 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   </div>
   <div class="drawer" id="drawer">
     <div class="drawer-in">
-      <a href="#dispatching">Диспетчеризация</a>
-      <a href="#control">Фотоконтроль</a>
+      <a href="#dispatching">Мониторинг</a>
+      <a href="#control">Фотоотчёты</a>
       <a href="#demo">Демо</a>
       <a href="platform.html">Смотреть платформу</a>
       <a href="#cta" style="color:var(--violet-soft); font-weight:600">Запросить демо</a>
@@ -572,22 +580,14 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
        ============================================================ -->
   <section class="scene" id="hero">
     <div class="scene__stage">
-      <div class="hero-scene">
-       <div class="hero-cam" id="hero-cam">
+      <div class="hero-bg" id="hero-bg">
+        <video class="hero-video" id="hero-video" muted loop playsinline preload="none" aria-hidden="true"></video>
+        <div class="horizon-glow" aria-hidden="true"></div>
+        <div class="grade" aria-hidden="true"></div>
+      </div>
+      <div class="hero-scrim" aria-hidden="true"></div>
 
-        <div class="hero-layer layer-media">
-          <div class="hero-media" id="hero-media">
-            <video class="hero-video" id="hero-video" muted loop playsinline preload="none" aria-hidden="true"></video>
-            <div class="horizon-glow" aria-hidden="true"></div>
-            <canvas id="city" aria-hidden="true"></canvas>
-            <div class="grade" aria-hidden="true"></div>
-          </div>
-        </div>
-
-        <div class="hero-layer layer-scrim" aria-hidden="true"><div class="hero-scrim"></div></div>
-
-        <div class="hero-layer layer-copy">
-         <div class="hero-copy" id="hero-copy">
+      <div class="hero-copy" id="hero-copy">
         <span class="eyebrow">366TECH FLEET · Алматы</span>
         <h1 class="display">Контролируйте каждое<br>движение автопарка.<br><span class="grad">В реальном времени.</span></h1>
         <p class="lead">GPS-трекер на машине или просто смартфон сотрудника — координаты, маршруты,
@@ -602,33 +602,29 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
           <div class="kpi"><div class="v">18 мин</div><div class="l">средний простой</div></div>
           <div class="kpi"><div class="v">99.4%</div><div class="l">аптайм платформы</div></div>
         </div>
-         </div>
-        </div>
+      </div>
 
-        <!-- панель диспетчера — тот же 3D-слой, летит вместе со сценой -->
-        <div class="hero-layer layer-panel" id="layer-panel">
-         <div class="dispatch" id="dispatch">
-        <div class="dispatch-in glass">
-          <div class="d-bar">
-            <span class="dots"><i></i><i></i><i></i></span>
-            <span class="t">366TECH FLEET · Панель диспетчера</span>
-            <span class="chip-live"><i></i>Система онлайн</span>
-          </div>
-          <div class="d-stats">
-            <div class="d-stat"><div class="l">Всего ТС</div><div class="v">48</div><div class="s">+3 за месяц</div></div>
-            <div class="d-stat"><div class="l">На линии</div><div class="v">42</div><div class="s">88% парка</div></div>
-            <div class="d-stat"><div class="l">В движении</div><div class="v" id="k-moving">29</div><div class="s">69% на линии</div></div>
-            <div class="d-stat"><div class="l">Стоят</div><div class="v">13</div><div class="s" style="color:var(--amber)">1 требует внимания</div></div>
-          </div>
-          <div class="d-body">
-            <div class="d-map"><div class="map-host" id="hero-map"></div></div>
-            <div class="d-side" id="hero-side"></div>
+      <!-- панель диспетчера: поднимается по центру экрана -->
+      <div class="hero-panel">
+        <div class="dispatch" id="dispatch">
+          <div class="dispatch-in glass">
+            <div class="d-bar">
+              <span class="dots"><i></i><i></i><i></i></span>
+              <span class="t">366TECH FLEET · Панель диспетчера</span>
+              <span class="chip-live"><i></i>Система онлайн</span>
+            </div>
+            <div class="d-stats">
+              <div class="d-stat"><div class="l">Всего ТС</div><div class="v">48</div><div class="s">+3 за месяц</div></div>
+              <div class="d-stat"><div class="l">На линии</div><div class="v">42</div><div class="s">88% парка</div></div>
+              <div class="d-stat"><div class="l">В движении</div><div class="v" id="k-moving">29</div><div class="s">69% на линии</div></div>
+              <div class="d-stat"><div class="l">Стоят</div><div class="v">13</div><div class="s" style="color:var(--amber)">1 требует внимания</div></div>
+            </div>
+            <div class="d-body">
+              <div class="d-map"><div class="map-host" id="hero-map"></div></div>
+              <div class="d-side" id="hero-side"></div>
+            </div>
           </div>
         </div>
-         </div>
-        </div>
-
-       </div>
       </div>
 
       <div class="scroll-cue" id="cue"><span>Листайте</span><i></i></div>
@@ -642,7 +638,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
     <div class="scene__stage">
       <div class="disp-grid">
         <div>
-          <span class="eyebrow">Живая диспетчеризация</span>
+          <span class="eyebrow">Как это работает</span>
           <h2 class="h2" style="margin-top:18px">Два источника<br>координат.<br><span class="grad">Один экран.</span></h2>
           <div class="disp-steps" style="margin-top:30px">
             <article class="step on" data-step="0">
@@ -668,6 +664,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
           <video id="disp-video" muted loop playsinline preload="metadata" aria-hidden="true"></video>
           <div class="frame-scrim"></div>
 
+          <div class="badges" id="badges">
           <div class="badge b-violet" data-at="0.08" style="top:9%; left:6%">
             <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span>
             <span><span class="t1">GPS-трекер · 15 сек</span><span class="t2">702 AB 02 · Арман К.</span></span>
@@ -684,6 +681,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
             <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
             <span><span class="t1">Задание №1612 · трек сохранён</span><span class="t2">9 точек · 12,4 км</span></span>
           </div>
+          </div>
 
           <div class="progress-line"><i id="dp"></i></div>
         </div>
@@ -697,7 +695,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   <section class="section" id="control">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Доказательство работы</span>
+        <span class="eyebrow">Фотоотчёты</span>
         <h2 class="h2">Фото ДО и ПОСЛЕ.<br><span class="grad">С координатами и временем.</span></h2>
         <p class="lead">Нельзя просто сказать «я там был и всё сделал». Снимок привязан к точке, времени,
           сотруднику и номеру задания — отчёт формируется сам.</p>
@@ -764,9 +762,9 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   <section class="section" id="demo" style="padding-top:0">
     <div class="wrap">
       <div class="section-head reveal" style="max-width:820px">
-        <span class="eyebrow">Живое демо</span>
-        <h2 class="h2">Панель диспетчера —<br><span class="grad">прямо здесь.</span></h2>
-        <p class="lead">Переключайте режимы, как это делает диспетчер: карта смены, список рейсов и ТВ-режим для экрана в офисе.</p>
+        <span class="eyebrow">Демо панели</span>
+        <h2 class="h2">Панель диспетчера —<br><span class="grad">как у вас на экране.</span></h2>
+        <p class="lead">То же, что видит диспетчер в смену: карта, список рейсов и ТВ-режим для экрана в офисе.</p>
       </div>
 
       <div class="demo-panel glass reveal" data-d="1" style="margin-top:clamp(28px,4vw,48px)">
@@ -819,7 +817,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
     <div class="wrap">
       <div class="cta-card glass reveal">
         <div>
-          <span class="eyebrow">Готовы увидеть больше?</span>
+          <span class="eyebrow">Демо и внедрение</span>
           <h2 class="h2" style="margin-top:18px; font-size:clamp(28px,3.4vw,46px)">Покажем платформу<br>на данных вашего<br><span class="grad">автопарка.</span></h2>
           <p class="lead" style="margin-top:20px">30 минут демо: заведём ваши машины и маршруты, включим фотоотчётность и пороги остановок.</p>
           <div class="contact-list">
@@ -862,13 +860,13 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
     <div class="foot">
       <div>
         <div class="brand" style="margin-bottom:14px"><span class="mark">366</span><b>TECH FLEET</b></div>
-        <p style="color:var(--dim); font-size:14px; max-width:260px; line-height:1.6">Контроль выездных работ и транспорта: координаты, маршруты, фотоотчётность и автоматические нарушения на одной платформе.</p>
+        <p style="color:var(--dim); font-size:14px; max-width:260px; line-height:1.6">Координаты, маршруты, фото с объектов и нарушения — в одной панели.</p>
       </div>
-      <div><h4>Платформа</h4><a href="platform.html">Панель диспетчера</a><a href="#dispatching">GPS и смартфон</a><a href="#control">Фотоконтроль</a></div>
+      <div><h4>Платформа</h4><a href="platform.html">Панель диспетчера</a><a href="#dispatching">GPS и смартфон</a><a href="#control">Фотоотчёты</a></div>
       <div><h4>Компания</h4><a href="#demo">Живое демо</a><a href="#cta">Контакты</a><a href="index1.html">Классическая версия сайта</a></div>
       <div><h4>Связаться</h4><a href="tel:+77789990203">+7 (778) 999-02-03</a><a href="mailto:366media@mail.ru">366media@mail.ru</a><a href="https://wa.me/77789990203" target="_blank" rel="noopener">WhatsApp</a></div>
     </div>
-    <div class="copyright"><span>© 2026 366TECH FLEET · Алматы, Казахстан</span><span>Сделано для диспетчеров, которые не любят сюрпризы</span></div>
+    <div class="copyright"><span>© 2026 366TECH FLEET · Алматы, Казахстан</span><span>Работаем с автопарками и выездными службами</span></div>
   </div>
 </footer>
 
@@ -994,7 +992,7 @@ function mountVideo(el, m, layer){
   });
 }
 function attachMedia(){
-  mountVideo($('#hero-video'), MEDIA.hero, $('#hero-media'));
+  mountVideo($('#hero-video'), MEDIA.hero, $('#hero-bg'));
   mountVideo($('#disp-video'), MEDIA.dispatch, $('#disp-frame'));
 
   if(isMobileView || reduceMotion){ const road = $('#road'); if(road) road.style.display = 'none'; }
@@ -1103,331 +1101,31 @@ $$('#drawer a').forEach(a => a.addEventListener('click', () => {
 /* =========================================================
    SECTION 1 — кинематографический зум в панель
    ========================================================= */
-const heroEl = $('#hero'), cam = $('#hero-cam'), media = $('#hero-media'),
-      copy = $('#hero-copy'), dash = $('#dispatch'), panelLayer = $('#layer-panel'), cue = $('#cue');
+const heroEl = $('#hero'), bg = $('#hero-bg'),
+      copy = $('#hero-copy'), dash = $('#dispatch'), cue = $('#cue');
 
-/* Заголовок, фон и панель лежат в одной 3D-сцене: двигается камера,
-   поэтому все слои падают и масштабируются синхронно, как одно целое. */
+/* Герой без 3D-сцены: фон плавно уходит в глубокое размытие,
+   заголовок поднимается и гаснет, панель диспетчера встаёт ровно по центру экрана. */
 registerScene(heroEl, p => {
   const ease = t => 1 - Math.pow(1 - t, 3);
 
-  /* на телефоне ход камеры короче: панель не «раздувается» за края экрана */
-  const camZ = isMobileView ? 110 : 280, camRx = isMobileView ? 7 : 11;
-  /* сначала лёгкий наезд, после появления панели сцена «падает» целиком */
-  const fall = Math.pow(clamp((p - .42) / .58), 1.5);
-  const k = .28 * p + .72 * fall;
-  cam.style.setProperty('--cam-y',  (-15 * k).toFixed(2) + 'vh');
-  cam.style.setProperty('--cam-z',  (camZ * k).toFixed(1) + 'px');
-  cam.style.setProperty('--cam-rx', (camRx * k).toFixed(2) + 'deg');
-  cam.style.setProperty('--cam-s',  (1 + .05 * k).toFixed(3));
-
-  const fade = clamp(p / .38);
-  copy.style.setProperty('--copy-o', (1 - fade).toFixed(3));
-  copy.style.setProperty('--copy-b', (9 * fade).toFixed(1) + 'px');
-  const vo = .92 - .82 * clamp((p - .18) / .5);      /* съёмка города → живая карта */
-  media.style.setProperty('--video-o', vo.toFixed(3));
-  skyCity.videoMix = vo;
+  const out = clamp(p / .42);
+  copy.style.setProperty('--copy-o', (1 - out).toFixed(3));
+  copy.style.setProperty('--copy-y', (-70 * out).toFixed(1) + 'px');
   cue.style.opacity = String(1 - clamp(p / .12));
 
-  /* панель выходит из глубины той же сцены */
-  const up = ease(clamp((p - .5) / .44));
+  /* размытие квантуем шагом 2px — браузер не перерисовывает фон каждый кадр */
+  const blur = Math.round((3 + 15 * clamp(p / .65)) / 2) * 2;
+  bg.style.setProperty('--bg-b', blur + 'px');
+  bg.style.setProperty('--bg-s', (1 + .1 * p).toFixed(3));
+  bg.style.setProperty('--video-o', (1 - .3 * p).toFixed(3));
+
+  const up = ease(clamp((p - .28) / .5));
   dash.style.setProperty('--dash-o', up.toFixed(3));
-  panelLayer.style.setProperty('--panel-z', (-280 * (1 - up)).toFixed(1) + 'px');
-  dash.classList.toggle('live', up > .9);
-  skyCity.p = p;
+  dash.style.setProperty('--dash-y', (90 * (1 - up)).toFixed(1) + 'px');
+  dash.style.setProperty('--dash-s', (.95 + .05 * up).toFixed(3));
+  dash.classList.toggle('live', up > .85);
 });
-
-/* =========================================================
-   ГЕРОЙ: полёт с неба к улицам Алматы.
-   Одна canvas-сцена: облака → сетка улиц → фиолетовые маршруты
-   → машины на маршрутах → кварталы у земли.
-   Высота камеры привязана к прокрутке (skyCity.p = 0…1).
-   ========================================================= */
-const skyCity = (() => {
-  const cv = $('#city'), ctx = cv.getContext('2d');
-  let w = 0, h = 0, dpr = 1;
-  const api = { p: 0, videoMix: 0 };   /* videoMix: насколько сейчас видно съёмку города */
-
-  const SPAN = 9000, MINOR = 420, MAJOR = 1680;       /* метры */
-  /* маршруты проложены по сетке улиц: только повороты на 90° */
-  const ROUTES = [
-    { c:'139,92,246', main:true, pts:[[-3360,-2520],[-3360, 840],[0, 840],[0, 3360],[3360, 3360]] },
-    { c:'47,224,172', pts:[[-5040, 2520],[-1680, 2520],[-1680,-1680],[1680,-1680],[1680,-4200]] },
-    { c:'76,155,255', pts:[[3360,-3360],[3360,-840],[5040,-840],[5040, 2520]] },
-  ];
-  /* длины сегментов для движения машин */
-  ROUTES.forEach(r => {
-    r.segs = []; r.total = 0;
-    for(let i = 0; i < r.pts.length - 1; i++){
-      const a = r.pts[i], b = r.pts[i + 1];
-      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      r.segs.push({ a, b, len, start:r.total, ang: Math.atan2(-(b[1] - a[1]), b[0] - a[0]) });
-      r.total += len;
-    }
-  });
-  function onRoute(r, dist){
-    let d = dist % r.total; if(d < 0) d += r.total;
-    for(const sg of r.segs){
-      if(d <= sg.start + sg.len){
-        const k = (d - sg.start) / sg.len;
-        return { x: lerp(sg.a[0], sg.b[0], k), y: lerp(sg.a[1], sg.b[1], k), ang: sg.ang };
-      }
-    }
-    const l = r.segs[r.segs.length - 1];
-    return { x:l.b[0], y:l.b[1], ang:l.ang };
-  }
-  const CARS = [];
-  ROUTES.forEach((r, ri) => {
-    const n = r.main ? 3 : 2;
-    for(let i = 0; i < n; i++) CARS.push({ r, d: r.total * (i / n) + ri * 900, v: 95 + Math.random() * 55, ang:0, truck: r.main && i === 0 });
-  });
-  /* кварталы у земли */
-  const BLOCKS = [];
-  for(let i = 0; i < 150; i++){
-    const gx = Math.round((Math.random() - .5) * SPAN * 1.6 / MINOR) * MINOR + MINOR * .5;
-    const gy = Math.round((Math.random() - .5) * SPAN * 1.6 / MINOR) * MINOR + MINOR * .5;
-    BLOCKS.push({ x:gx, y:gy, hgt: 26 + Math.random() * 130, w: 70 + Math.random() * 110 });
-  }
-  /* огни города: точки на перекрёстках — с высоты читается как ночной Алматы */
-  const TILE = 10080;   /* размер «квартала маршрутов» */
-  const LIGHTS = Array.from({ length: isMobileView ? 220 : 460 }, () => {
-    const gx = Math.round((Math.random() - .5) * SPAN * 2.2 / MINOR) * MINOR;
-    const gy = Math.round((Math.random() - .5) * SPAN * 2.2 / MINOR) * MINOR;
-    const r = Math.random();
-    return {
-      x: gx + (Math.random() - .5) * MINOR * .7,
-      y: gy + (Math.random() - .5) * MINOR * .7,
-      c: r > .82 ? '139,92,246' : (r > .7 ? '47,224,172' : '225,215,180'),
-      i: .35 + Math.random() * .65,
-    };
-  });
-  const STARS = Array.from({ length: 70 }, () => ({ x:Math.random(), y:Math.random() * .42, r:Math.random() * 1.2 + .3, t:Math.random() * 6 }));
-  const CLOUDS = Array.from({ length: 7 }, (_, i) => ({ x:.12 + Math.random() * .76, y:.18 + Math.random() * .5, s:.22 + Math.random() * .4, sp:.6 + Math.random() * .9, o:.5 + Math.random() * .5 }));
-
-  /* камера */
-  let alt = 9000, camDist = 13500, heading = 0, horizon = 0, f = 1;
-  function camera(){
-    const p = clamp(api.p);
-    /* 9 км над городом → 300 м над улицей */
-    alt = 9000 * Math.pow(300 / 9000, Math.pow(p, .85));
-    camDist = alt + 80;
-    /* сверху горизонт за кадром (вид почти в надир), у земли — появляется */
-    horizon = h * lerp(-0.62, 0.30, Math.pow(p, .7));
-    heading = -0.22 + p * 0.4;
-    f = h * 1.12;
-  }
-  function project(x, y){
-    const ca = Math.cos(heading), sa = Math.sin(heading);
-    const rx = x * ca - y * sa, ry = x * sa + y * ca;
-    const d = ry + camDist;
-    if(d < alt * .12) return null;
-    return { X: w / 2 + rx * f / d, Y: horizon + alt * f / d, d };
-  }
-  function line(a, b){ if(!a || !b) return; ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke(); }
-
-  function size(){
-    dpr = Math.min(window.devicePixelRatio || 1, isMobileView ? 1.5 : 2);
-    w = cv.clientWidth; h = cv.clientHeight;
-    cv.width = Math.max(1, w * dpr); cv.height = Math.max(1, h * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-
-  function drawTruckShape(x, y, ang, k){
-    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(k, k);
-    ctx.fillStyle = '#eef6f3'; ctx.shadowColor = 'rgba(47,224,172,.9)'; ctx.shadowBlur = 10;
-    ctx.fillRect(-11, -5, 15, 10);
-    ctx.fillStyle = '#2fe0ac';
-    ctx.beginPath(); ctx.moveTo(4, -3.4); ctx.lineTo(11, -3.4); ctx.lineTo(14, 1.4); ctx.lineTo(14, 5); ctx.lineTo(4, 5); ctx.closePath(); ctx.fill();
-    ctx.shadowBlur = 0; ctx.fillStyle = '#0b0f14';
-    ctx.beginPath(); ctx.arc(-6, 6, 2.6, 0, 6.283); ctx.fill();
-    ctx.beginPath(); ctx.arc(9, 6, 2.6, 0, 6.283); ctx.fill();
-    ctx.restore();
-  }
-
-  /* уровни детализации: чем ниже летим, тем мельче сетка улиц — как в картах */
-  function lodLevels(){
-    const lod = Math.max(0, Math.log2(alt / 3000));
-    const li = Math.floor(lod), fr = lod - li;
-    return [{ s: Math.pow(2, li), a: 1 - fr }, { s: Math.pow(2, li + 1), a: 1 }];
-  }
-  function drawGrid(step, color, width, range){
-    ctx.strokeStyle = color; ctx.lineWidth = width;
-    for(let v = -range; v <= range; v += step){
-      line(project(v, -range), project(v, range));
-      line(project(-range, v), project(range, v));
-    }
-  }
-  function drawRouteSet(scale, alpha, low, t){
-    const vmix = clamp(api.videoMix);
-    const TILE_S = TILE * scale;
-    const cx = camDist * Math.sin(heading), cy = camDist * Math.cos(heading);
-    const reach = Math.max(1, Math.ceil(alt * 2.6 / TILE_S));
-    const t0x = Math.round(cx / TILE_S), t0y = Math.round(cy / TILE_S);
-    for(let i = -reach; i <= reach; i++){
-      for(let j = -reach; j <= reach; j++){
-        const ox = (t0x + i) * TILE_S, oy = (t0y + j) * TILE_S;
-        ROUTES.forEach(r => {
-          const pts = r.pts.map(pt => project(pt[0] * scale + ox, pt[1] * scale + oy));
-          if(pts.some(q => !q)) return;
-          if(pts.every(q => q.X < -240 || q.X > w + 240 || q.Y < horizon - 80 || q.Y > h + 240)) return;
-          ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-          ctx.strokeStyle = 'rgba(' + r.c + ',' + ((r.main ? .6 : .4) * alpha * (1 - .4 * vmix)).toFixed(3) + ')';
-          ctx.lineWidth = (r.main ? 5.5 : 4) * (0.85 + 1.1 * low);
-          ctx.shadowColor = 'rgba(' + r.c + ',' + (.95 * alpha * (1 - .3 * vmix)).toFixed(2) + ')'; ctx.shadowBlur = 16 + 14 * low;
-          ctx.beginPath(); pts.forEach((q, k) => k ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y)); ctx.stroke();
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = 'rgba(' + r.c + ',' + (.95 * alpha).toFixed(3) + ')';
-          ctx.lineWidth = Math.max(1, 1.6 * (0.6 + low));
-          ctx.setLineDash([2, 14]); ctx.lineDashOffset = -t / 26;
-          ctx.beginPath(); pts.forEach((q, k) => k ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y)); ctx.stroke();
-          ctx.setLineDash([]);
-          r.pts.forEach((pt, k) => {
-            if(k === 0 || k === r.pts.length - 1) return;
-            const q = project(pt[0] * scale + ox, pt[1] * scale + oy); if(!q) return;
-            ctx.fillStyle = 'rgba(' + r.c + ',' + (.9 * alpha).toFixed(2) + ')';
-            ctx.shadowColor = 'rgba(' + r.c + ',1)'; ctx.shadowBlur = 12;
-            ctx.beginPath(); ctx.arc(q.X, q.Y, 2 + 3 * low, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
-          });
-        });
-      }
-    }
-    return { TILE_S, t0x, t0y };
-  }
-
-  function frame(t, dt){
-    if(!w || !h) size();
-    camera();
-    const p = clamp(api.p);
-    const high = clamp(1 - p / .5);
-    const low  = clamp((p - .45) / .55);
-    const lv = lodLevels();
-    const range = Math.max(alt * 3.4, 4200);
-
-    /* пока под нами настоящая съёмка города — canvas прозрачный и рисует только неон */
-    const vm = clamp(api.videoMix);
-    const worldA = 1 - .85 * vm;            /* сетка, огни и кварталы уступают видео */
-    ctx.clearRect(0, 0, w, h);
-    if(vm < .98){
-    ctx.fillStyle = 'rgba(4,5,10,' + (1 - vm).toFixed(3) + ')'; ctx.fillRect(0, 0, w, h);
-    if(horizon > 20){
-      const sky = ctx.createLinearGradient(0, 0, 0, horizon + 40);
-      sky.addColorStop(0, '#04050a');
-      sky.addColorStop(.7, '#070a16');
-      sky.addColorStop(1, 'rgba(95,75,200,' + (.14 + .18 * low).toFixed(3) + ')');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, w, horizon + 40);
-    }
-    }
-    if(high > .02 && horizon > 60){
-      for(const st of STARS){
-        ctx.globalAlpha = .5 * high * (.6 + .4 * Math.sin(t / 900 + st.t));
-        ctx.fillStyle = 'rgba(200,210,255,1)';
-        ctx.beginPath(); ctx.arc(st.x * w, st.y * horizon, st.r, 0, 6.283); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    /* земля */
-    if(vm < .98){
-      ctx.fillStyle = 'rgba(9,12,22,' + (.75 * (1 - vm)).toFixed(3) + ')';
-      ctx.fillRect(0, Math.max(0, horizon), w, h - Math.max(0, horizon));
-    }
-
-    /* сетка улиц: два уровня детализации с плавным переходом */
-    lv.forEach(l => drawGrid(MINOR * l.s, 'rgba(150,165,220,' + (.13 * l.a * worldA).toFixed(3) + ')', 1, range));
-    drawGrid(MAJOR * lv[1].s, 'rgba(185,200,255,' + ((.24 + .1 * low) * worldA).toFixed(3) + ')', Math.max(1.3, 2 + 2 * low), range);
-
-    /* огни города */
-    ctx.globalCompositeOperation = 'lighter';
-    lv.forEach(l => {
-      const step = TILE * l.s;
-      const cx = camDist * Math.sin(heading), cy = camDist * Math.cos(heading);
-      const bx = Math.round(cx / step) * step, by = Math.round(cy / step) * step;
-      for(const lt of LIGHTS){
-        const q = project(lt.x * l.s + bx, lt.y * l.s + by);
-        if(!q || q.X < -30 || q.X > w + 30 || q.Y < Math.max(0, horizon) - 6 || q.Y > h + 10) continue;
-        const fade = clamp(1 - q.d / (alt * 24));
-        const rad = Math.max(1.3, Math.min(4, 1800 / q.d * (1 + low)));
-        ctx.fillStyle = 'rgba(' + lt.c + ',' + (lt.i * fade * l.a * .95 * worldA).toFixed(3) + ')';
-        ctx.beginPath(); ctx.arc(q.X, q.Y, rad, 0, 6.283); ctx.fill();
-      }
-    });
-    ctx.globalCompositeOperation = 'source-over';
-
-    /* маршруты: непрерывный масштаб — сеть всегда попадает в кадр */
-    const rs = Math.max(0.5, alt / 12000);
-    const near = drawRouteSet(rs, 1, low, t);
-
-    /* кварталы поднимаются у земли */
-    if(low > .05){
-      const step = TILE * rs;
-      const cx = camDist * Math.sin(heading), cy = camDist * Math.cos(heading);
-      const bx = Math.round(cx / step) * step, by = Math.round(cy / step) * step;
-      for(const b of BLOCKS){
-        const g = project(b.x * rs + bx, b.y * rs + by);
-        if(!g || g.Y < horizon) continue;
-        const hpx = b.hgt * f / g.d * low;
-        if(hpx < .5) continue;
-        const fade = clamp(1 - g.d / (alt * 20));
-        const bw = Math.max(1, b.w * f / g.d);
-        ctx.fillStyle = 'rgba(120,140,235,' + (.14 * fade * low * worldA).toFixed(3) + ')';
-        ctx.fillRect(g.X - bw / 2, g.Y - hpx, bw, hpx);
-        ctx.fillStyle = 'rgba(190,205,255,' + (.55 * fade * low * worldA).toFixed(3) + ')';
-        ctx.fillRect(g.X - bw / 2, g.Y - hpx - 1, bw, 1.2);
-      }
-    }
-
-    /* техника едет по ближнему маршруту — её видно на любой высоте */
-    const scale = rs;
-    const bx = near.t0x * near.TILE_S, by = near.t0y * near.TILE_S;
-    for(const c of CARS){
-      c.d += c.v * dt / 1000 * Math.max(1, scale * .35);
-      const pos = onRoute(c.r, c.d);
-      const q = project(pos.x * scale + bx, pos.y * scale + by);
-      if(!q || q.Y < horizon) continue;
-      const k = f / q.d;
-      c.ang = lerp(c.ang, pos.ang, .2);
-      if(low > .5 && k > .05 && c.truck){
-        drawTruckShape(q.X, q.Y, -c.ang, Math.min(1.6, k * 22));
-      }else{
-        const rad = Math.max(1.6, Math.min(6, 2.4 * (0.8 + low * 2)));
-        ctx.fillStyle = 'rgba(' + c.r.c + ',1)';
-        ctx.shadowColor = 'rgba(' + c.r.c + ',1)'; ctx.shadowBlur = 14;
-        ctx.beginPath(); ctx.arc(q.X, q.Y, rad, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
-        ctx.strokeStyle = 'rgba(' + c.r.c + ',' + (.4).toFixed(2) + ')'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(q.X, q.Y, rad + 4 + (Math.sin(t / 400 + c.d * .01) + 1) * 3, 0, 6.283); ctx.stroke();
-      }
-    }
-
-    /* облака: пролетаем сквозь них, пока высоко */
-    if(high > .01 && vm < .5){
-      for(const cl of CLOUDS){
-        const grow = 1 + (1 - high) * 2.6;
-        const cx2 = cl.x * w, cy2 = (cl.y + (1 - high) * cl.sp) * h;
-        const rad = cl.s * h * grow;
-        const g = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, rad);
-        const a = cl.o * high * .55;
-        g.addColorStop(0, 'rgba(155,155,215,' + (a * .5).toFixed(3) + ')');
-        g.addColorStop(.55, 'rgba(90,95,165,' + (a * .2).toFixed(3) + ')');
-        g.addColorStop(1, 'rgba(10,12,22,0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx2, cy2, rad, 0, 6.283); ctx.fill();
-      }
-    }
-
-    /* дымка у горизонта */
-    if(horizon > -60 && vm < .9){
-      const haze = ctx.createLinearGradient(0, horizon - 40, 0, horizon + 120);
-      haze.addColorStop(0, 'rgba(139,92,246,0)');
-      haze.addColorStop(.4, 'rgba(110,90,220,' + (.14 + .12 * low).toFixed(3) + ')');
-      haze.addColorStop(1, 'rgba(4,5,10,0)');
-      ctx.fillStyle = haze; ctx.fillRect(0, horizon - 40, w, 160);
-    }
-  }
-
-  window.addEventListener('resize', size, { passive:true });
-  size(); Ticker.add(frame, cv);
-  return api;
-})();
-const city = skyCity;   /* совместимость со старым именем */
 
 /* ---------------- мини-карта внутри панели героя ---------------- */
 const fleet = [
@@ -1531,9 +1229,9 @@ function leafletFleetMap(host, opts){
     doubleClickZoom: !!opts.controls, scrollWheelZoom: false, boxZoom: false, keyboard: false,
     attributionControl: true, preferCanvas: true, fadeAnimation: false, zoomAnimation: !!opts.controls, inertia: false,
   });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (opts.labels ? 'dark_all' : 'dark_nolabels') + '/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO',
-    updateWhenIdle: true, keepBuffer: 1, detectRetina: !isMobileView,
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap',
+    updateWhenIdle: true, keepBuffer: 1,
   }).addTo(map);
 
   L.polyline(ROUTE, { color:'#8B5CF6', weight: opts.big ? 7 : 5, opacity:.42, lineJoin:'round', className:'route-glow', interactive:false }).addTo(map);
@@ -1674,6 +1372,24 @@ const demoMap = createFleetMap($('#demo-map'), { zoom: 13, labels:true, controls
    ========================================================= */
 const steps = $$('#dispatching .step');
 const badges = $$('#dispatching .badge');
+
+/* на телефоне и планшете выносим карточки из кадра — иначе они перекрывают друг друга */
+(function layoutBadges(){
+  const box = $('#badges'), frame = $('#disp-frame');
+  if(!box || !frame) return;
+  const mq = window.matchMedia('(max-width:1100px)');
+  const apply = () => {
+    if(mq.matches){
+      box.classList.add('flat');
+      if(box.parentNode === frame) frame.parentNode.insertBefore(box, frame.nextSibling);
+    }else{
+      box.classList.remove('flat');
+      if(box.parentNode !== frame) frame.appendChild(box);
+    }
+  };
+  apply();
+  mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply);
+})();
 registerScene($('#dispatching'), p => {
   $('#dp').style.setProperty('--dp', (p * 100).toFixed(1) + '%');
   const idx = p < .34 ? 0 : p < .67 ? 1 : 2;
