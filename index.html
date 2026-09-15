@@ -161,8 +161,17 @@ header.hide{transform:translateY(-140%); opacity:0}
 .route-thread path{fill:none; stroke-linecap:round; stroke-linejoin:round}
 .route-thread .ghost{stroke:rgba(139,92,246,.13); stroke-width:2}
 .route-thread .live{stroke:url(#threadGrad); stroke-width:2.4; filter:drop-shadow(0 0 7px rgba(139,92,246,.9))}
-.route-thread circle{fill:#2FE0AC; filter:drop-shadow(0 0 9px rgba(47,224,172,.95))}
-@media (max-width:768px){ .route-thread{display:none} }
+.thread-dot{
+  position:absolute; left:0; top:0; width:11px; height:11px; margin:-5.5px 0 0 -5.5px; border-radius:50%;
+  background:#2FE0AC; box-shadow:0 0 12px rgba(47,224,172,.95), 0 0 30px rgba(47,224,172,.4);
+  z-index:0; pointer-events:none; opacity:0; transition:opacity .5s ease; will-change:transform;
+}
+.thread-dot.on{opacity:1}
+@media (max-width:768px){
+  .route-thread.on{opacity:.3}
+  .route-thread .live{stroke-width:1.8}
+  .thread-dot{width:9px; height:9px; margin:-4.5px 0 0 -4.5px}
+}
 
 /* =========================================================
    SECTION 1 — HERO (pinned cinematic zoom)
@@ -174,7 +183,7 @@ main{position:relative; z-index:2}
 /* --- герой: фон-видео + резкий текст, без 3D-слоёв --- */
 .hero-bg{
   position:absolute; inset:-7%; z-index:0; overflow:hidden; pointer-events:none;
-  transform:scale(var(--bg-s,1)); filter:blur(var(--bg-b,3px));
+  transform:scale(var(--bg-s,1)); filter:blur(var(--bg-b,0px));
   will-change:transform, filter; background:#05070c;
 }
 .hero-video{
@@ -245,7 +254,10 @@ main{position:relative; z-index:2}
 .leaflet-control-attribution a{color:#6b7186 !important}
 .leaflet-control-zoom a{background:#11131c !important; color:#eef0f6 !important; border-color:var(--hair) !important}
 .route-glow{filter:drop-shadow(0 0 6px rgba(139,92,246,.75))}
-.veh-pin{display:block; width:12px; height:12px; border-radius:50%; border:2px solid rgba(5,7,12,.9); box-shadow:0 0 12px currentColor; background:currentColor}
+.veh-pin{position:relative; display:block; width:14px; height:14px; border-radius:50%; border:2px solid rgba(5,7,12,.9); box-shadow:0 0 12px currentColor; background:currentColor}
+.veh-pin b{position:absolute; inset:-5px; border-radius:50%; border:1.5px solid currentColor; animation:pinPulse 2.2s ease-out infinite}
+@keyframes pinPulse{0%{transform:scale(.6); opacity:.85} 100%{transform:scale(2.1); opacity:0}}
+@media (prefers-reduced-motion:reduce){ .veh-pin b{animation:none; opacity:.25} }
 .truck-wrap{width:46px; height:46px; display:grid; place-items:center; pointer-events:none}
 .truck{
   width:44px; height:24px; display:block; transform-origin:50% 50%; will-change:transform;
@@ -315,11 +327,6 @@ main{position:relative; z-index:2}
 .b-blue .ic{background:rgba(76,155,255,.16); color:#7db4ff}
 .b-amber .ic{background:rgba(246,171,63,.16); color:var(--amber)}
 .badges{position:absolute; inset:0; z-index:5; pointer-events:none}
-/* на узких экранах карточки уезжают из кадра вниз и больше не наезжают друг на друга */
-.badges.flat{position:static; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:12px}
-.badges.flat .badge{position:static; max-width:none; width:100%; white-space:normal}
-.badges.flat .badge .t2{display:block}
-@media (max-width:560px){ .badges.flat .badge .ic{width:26px; height:26px} }
 .progress-line{position:absolute; left:24px; right:24px; bottom:22px; height:2px; background:rgba(255,255,255,.08); border-radius:2px; z-index:6; overflow:hidden}
 .progress-line i{display:block; height:100%; width:var(--dp,0%); background:linear-gradient(90deg,var(--violet),var(--mint))}
 
@@ -443,17 +450,18 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
 @media (max-width:1100px){
   .d-body{grid-template-columns:1fr 200px}
   .disp-grid{grid-template-columns:1fr; align-content:center; gap:22px; padding-top:88px}
-  /* на телефоне и планшете секция обычная: без пиннинга, всё по очереди сверху вниз */
-  #dispatching{height:auto}
-  #dispatching .scene__stage{position:static; height:auto; overflow:visible}
-  .disp-grid{position:static; display:block; padding:76px 18px 10px}
-  .disp-steps{gap:10px; margin-top:24px}
-  .step{display:block; opacity:1; transform:none; padding:16px 18px}
-  .stage-frame{max-height:46svh; margin-top:22px}
-  .badges.flat{grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px}
-  .badges.flat .badge{opacity:1; transform:none; padding:10px 12px}
-  .badges.flat .badge .t2{display:none}
-  .badges.flat .badge .t1{font-size:12px; white-space:normal}
+  /* на телефоне кадр с видео закреплён, а карточка шага меняется на месте */
+  #dispatching{height:300vh}
+  .disp-grid{display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:14px; padding:84px 18px 44px}
+  .disp-grid > div:first-child{display:contents}
+  .disp-grid .eyebrow{order:1}
+  .disp-grid h2{order:2; font-size:clamp(24px,6.6vw,34px); margin:0}
+  .stage-frame{order:3; flex:0 0 auto; width:100%; height:38svh; max-height:none; aspect-ratio:auto; margin:4px 0 2px}
+  .disp-steps{order:4; position:relative; min-height:176px; margin:0; display:block}
+  .step{position:absolute; inset:0; display:block; opacity:0; transform:translateY(14px); padding:16px 18px; transition:opacity .45s var(--ease-out), transform .55s var(--ease-out)}
+  .step.on{opacity:1; transform:none}
+  .step p{font-size:14px}
+  .badges{display:none}
   .cmp-grid{grid-template-columns:1fr}
   .cta-card{grid-template-columns:1fr}
 }
@@ -465,7 +473,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   .tv-grid{grid-template-columns:repeat(2,1fr)}
   .foot{grid-template-columns:1fr 1fr}
   #hero{height:240vh}
-  #dispatching{height:auto}
+  #dispatching{height:300vh}
   .badge{padding:8px 11px; border-radius:13px; max-width:min(250px,72%)}
   .badge .t2{display:none}
   .badge .t1{font-size:12px; white-space:normal}
@@ -501,7 +509,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   .drawer-in{background:rgba(8,10,17,.97)}
   .badge{background:rgba(12,15,24,.95)}
   .tagpic{background:rgba(6,8,13,.92)}
-  .hero-bg{filter:blur(var(--bg-b,4px))}
+  .hero-bg{filter:blur(var(--bg-b,0px))}
   .hero-panel{padding:80px 16px 96px}
   .dispatch{width:min(1180px,92vw); aspect-ratio:auto; height:min(60svh,500px); max-height:none}
   .d-stat{padding:11px 13px}
@@ -520,7 +528,7 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
   .reveal{opacity:1 !important; transform:none !important; transition:none !important}
   .badge{opacity:1 !important; transform:none !important; transition:none !important}
   .btn:hover{transform:none}
-  .hero-bg{filter:blur(4px) !important; transform:none !important}
+  .hero-bg{filter:blur(2px) !important; transform:none !important}
 }
 </style>
 </head>
@@ -571,8 +579,8 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
     </defs>
     <path class="ghost" d="M500 760 C 500 1060, 120 1180, 120 1500 S 880 1760, 880 2080 S 170 2360, 170 2680 S 830 2940, 830 3240 L 500 3640" vector-effect="non-scaling-stroke"/>
     <path class="live" id="thread-path" d="M500 760 C 500 1060, 120 1180, 120 1500 S 880 1760, 880 2080 S 170 2360, 170 2680 S 830 2940, 830 3240 L 500 3640" vector-effect="non-scaling-stroke"/>
-    <circle id="thread-dot" r="5" cx="500" cy="760"/>
   </svg>
+  <span class="thread-dot" id="thread-dot" aria-hidden="true"></span>
 
 
   <!-- ============================================================
@@ -950,7 +958,7 @@ function pickQuality(big, small){
   const slow = c.saveData || /(^|-)2g$/.test(c.effectiveType || '');
   return (window.innerWidth < 1200 || slow) ? small : big;
 }
-function mountVideo(el, m, layer){
+function mountVideo(el, m, layer, allowMobile){
   if(!el || !m) return;
   if(m.poster){
     el.setAttribute('poster', m.poster);
@@ -960,9 +968,9 @@ function mountVideo(el, m, layer){
       layer.style.backgroundPosition = 'center';
     }
   }
-  if(isMobileView || reduceMotion){ el.style.display = 'none'; return; }
+  if(reduceMotion || (isMobileView && !allowMobile)){ el.style.display = 'none'; return; }
 
-  const small = pickQuality(false, true);
+  const small = isMobileView ? true : pickQuality(false, true);   /* на телефоне всегда 720p */
   const webm = small ? m.webmSm : m.webm;      /* VP9 — легче и современнее */
   const mp4  = small ? m.mp4Sm  : m.mp4;       /* H.264 — понимают все */
   el.preload = 'none';
@@ -993,7 +1001,7 @@ function mountVideo(el, m, layer){
 }
 function attachMedia(){
   mountVideo($('#hero-video'), MEDIA.hero, $('#hero-bg'));
-  mountVideo($('#disp-video'), MEDIA.dispatch, $('#disp-frame'));
+  mountVideo($('#disp-video'), MEDIA.dispatch, $('#disp-frame'), true);   /* на телефоне тоже видео */
 
   if(isMobileView || reduceMotion){ const road = $('#road'); if(road) road.style.display = 'none'; }
 
@@ -1057,7 +1065,7 @@ window.addEventListener('resize', onScroll);
 
 /* ---------------- маршрут через всю страницу ---------------- */
 const thread = $('#thread'), threadPath = $('#thread-path'), threadDot = $('#thread-dot');
-let threadLen = 0;
+let threadLen = 0, dotX = 0, dotY = 0, dotTX = 0, dotTY = 0, dotLive = false;
 function initThread(){
   if(!threadPath || !threadPath.getTotalLength) return;
   threadLen = threadPath.getTotalLength();
@@ -1072,12 +1080,26 @@ function updateThread(){
   const gp = clamp((doc.scrollTop - from) / Math.max(1, to - from));
   threadPath.style.strokeDashoffset = (threadLen * (1 - gp)).toFixed(1);
   thread.classList.toggle('on', gp > .003);
+
+  /* точка живёт в обычном DOM: круг не деформируется и двигается плавно */
   if(threadDot && gp > 0){
+    const box = thread.getBoundingClientRect();
     const pt = threadPath.getPointAtLength(threadLen * gp);
-    threadDot.setAttribute('cx', pt.x.toFixed(1));
-    threadDot.setAttribute('cy', pt.y.toFixed(1));
+    dotTX = pt.x / 1000 * box.width;
+    dotTY = pt.y / 4000 * box.height;
+    if(!dotLive){ dotX = dotTX; dotY = dotTY; dotLive = true; }
+    threadDot.classList.add('on');
+  }else if(threadDot){
+    threadDot.classList.remove('on');
   }
 }
+/* сглаживание: точка догоняет цель, поэтому движение мягкое даже при рывках скролла */
+Ticker.add(() => {
+  if(!dotLive || !threadDot) return;
+  dotX += (dotTX - dotX) * .12;
+  dotY += (dotTY - dotY) * .12;
+  threadDot.style.transform = 'translate3d(' + dotX.toFixed(1) + 'px,' + dotY.toFixed(1) + 'px,0)';
+});
 window.addEventListener('load', initThread);
 setTimeout(initThread, 120);
 
@@ -1115,7 +1137,7 @@ registerScene(heroEl, p => {
   cue.style.opacity = String(1 - clamp(p / .12));
 
   /* размытие квантуем шагом 2px — браузер не перерисовывает фон каждый кадр */
-  const blur = Math.round((3 + 15 * clamp(p / .65)) / 2) * 2;
+  const blur = Math.round((10 * clamp((p - .15) / .6)) / 2) * 2;
   bg.style.setProperty('--bg-b', blur + 'px');
   bg.style.setProperty('--bg-s', (1 + .1 * p).toFixed(3));
   bg.style.setProperty('--video-o', (1 - .3 * p).toFixed(3));
@@ -1234,12 +1256,10 @@ function leafletFleetMap(host, opts){
     updateWhenIdle: true, keepBuffer: 1,
   }).addTo(map);
 
-  L.polyline(ROUTE, { color:'#8B5CF6', weight: opts.big ? 7 : 5, opacity:.42, lineJoin:'round', className:'route-glow', interactive:false }).addTo(map);
-  L.polyline(ROUTE, { color:'#2FE0AC', weight: opts.big ? 2.6 : 2, opacity:.95, dashArray:'1 9', lineCap:'round', interactive:false }).addTo(map);
-
+  /* линию маршрута не рисуем — на карте живут только точки объектов */
   STOPS.forEach(st => L.marker(st.at, {
     interactive:false, keyboard:false,
-    icon: L.divIcon({ className:'', html:'<i class="veh-pin" style="color:' + st.c + '"></i>', iconSize:[12,12], iconAnchor:[6,6] }),
+    icon: L.divIcon({ className:'', html:'<i class="veh-pin" style="color:' + st.c + '"><b></b></i>', iconSize:[14,14], iconAnchor:[7,7] }),
   }).addTo(map));
 
   const cars = MOVERS.map(m => {
@@ -1335,19 +1355,15 @@ function canvasFleetMap(host, opts){
     STREETS.lat.forEach(lat => { ctx.beginPath(); ctx.moveTo(0, Y(lat)); ctx.lineTo(w, Y(lat)); ctx.stroke(); });
     STREETS.lng.forEach(lng => { ctx.beginPath(); ctx.moveTo(X(lng), 0); ctx.lineTo(X(lng), h); ctx.stroke(); });
 
-    /* маршрут */
-    ctx.strokeStyle = 'rgba(139,92,246,.45)'; ctx.lineWidth = opts.big ? 7 : 5; ctx.lineJoin = 'round';
-    ctx.shadowColor = 'rgba(139,92,246,.9)'; ctx.shadowBlur = 14;
-    ctx.beginPath(); ROUTE.forEach((pt, i) => i ? ctx.lineTo(X(pt[1]), Y(pt[0])) : ctx.moveTo(X(pt[1]), Y(pt[0]))); ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#2FE0AC'; ctx.lineWidth = 2; ctx.setLineDash([1, 9]); ctx.lineCap = 'round';
-    ctx.beginPath(); ROUTE.forEach((pt, i) => i ? ctx.lineTo(X(pt[1]), Y(pt[0])) : ctx.moveTo(X(pt[1]), Y(pt[0]))); ctx.stroke();
-    ctx.setLineDash([]);
-
-    /* точки заданий */
-    STOPS.forEach(st => {
-      ctx.fillStyle = st.c; ctx.shadowColor = st.c; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(X(st.at[1]), Y(st.at[0]), 5, 0, 6.283); ctx.fill();
+    /* точки объектов: живые, с пульсирующим кольцом (линию маршрута не рисуем) */
+    STOPS.forEach((st, i) => {
+      const cx = X(st.at[1]), cy = Y(st.at[0]);
+      const ph = ((t / 1600) + i * .28) % 1;
+      ctx.strokeStyle = st.c; ctx.globalAlpha = (1 - ph) * .5; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(cx, cy, 5 + ph * 15, 0, 6.283); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = st.c; ctx.shadowColor = st.c; ctx.shadowBlur = 14;
+      ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 6.283); ctx.fill();
       ctx.shadowBlur = 0;
     });
 
@@ -1373,23 +1389,7 @@ const demoMap = createFleetMap($('#demo-map'), { zoom: 13, labels:true, controls
 const steps = $$('#dispatching .step');
 const badges = $$('#dispatching .badge');
 
-/* на телефоне и планшете выносим карточки из кадра — иначе они перекрывают друг друга */
-(function layoutBadges(){
-  const box = $('#badges'), frame = $('#disp-frame');
-  if(!box || !frame) return;
-  const mq = window.matchMedia('(max-width:1100px)');
-  const apply = () => {
-    if(mq.matches){
-      box.classList.add('flat');
-      if(box.parentNode === frame) frame.parentNode.insertBefore(box, frame.nextSibling);
-    }else{
-      box.classList.remove('flat');
-      if(box.parentNode !== frame) frame.appendChild(box);
-    }
-  };
-  apply();
-  mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply);
-})();
+/* на узких экранах карточки-подсказки скрыты (см. CSS) — на кадре остаётся только видео */
 registerScene($('#dispatching'), p => {
   $('#dp').style.setProperty('--dp', (p * 100).toFixed(1) + '%');
   const idx = p < .34 ? 0 : p < .67 ? 1 : 2;
