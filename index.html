@@ -184,7 +184,21 @@ main{position:relative; z-index:2}
 .layer-panel{transform:translateZ(calc(170px + var(--panel-z,0px))) scale(.88)}
 .hero-media{position:absolute; inset:-4%; z-index:0}
 #city{position:absolute; inset:0; width:100%; height:100%; display:block}
-.hero-video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:var(--video-o,.5); mix-blend-mode:screen; filter:saturate(118%) contrast(112%)}
+.hero-video{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  opacity:var(--video-o,.9); filter:saturate(116%) contrast(112%) brightness(.94);
+}
+/* фирменный грейд поверх съёмки: фиолет сверху, мята снизу */
+.hero-media .grade{
+  position:absolute; inset:0; pointer-events:none; mix-blend-mode:overlay;
+  background:linear-gradient(162deg, rgba(139,92,246,.3) 0%, rgba(10,12,22,0) 46%, rgba(47,224,172,.18) 100%);
+}
+/* свечение над линией гор */
+.hero-media .horizon-glow{
+  position:absolute; left:-12%; right:-12%; top:22%; height:30%; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%, rgba(139,92,246,.45), rgba(76,79,232,.12) 45%, transparent 72%);
+  filter:blur(34px); opacity:var(--video-o,.9);
+}
 .hero-scrim{position:absolute; inset:0; z-index:1; background:
   radial-gradient(ellipse 74% 58% at 50% 42%, rgba(5,6,8,.12), rgba(5,6,8,.72) 82%),
   linear-gradient(180deg, rgba(5,6,8,.72) 0%, rgba(5,6,8,.08) 38%, rgba(5,6,8,.88) 100%)}
@@ -284,6 +298,9 @@ main{position:relative; z-index:2}
 .step p{font-size:14.5px; color:var(--dim); margin-top:7px; line-height:1.6}
 .stage-frame{position:relative; border-radius:var(--r-xl); overflow:hidden; aspect-ratio:16/10; max-height:72svh}
 .stage-frame video, .stage-frame canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.stage-frame video{transform:scale(1.06); animation:kenburns 26s ease-in-out infinite alternate; will-change:transform}
+@keyframes kenburns{from{transform:scale(1.06) translate3d(0,0,0)} to{transform:scale(1.14) translate3d(0,-1.5%,0)}}
+@media (prefers-reduced-motion:reduce){ .stage-frame video{animation:none} }
 .stage-frame .frame-scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,6,8,.35), rgba(5,6,8,.1) 40%, rgba(5,6,8,.72))}
 .badge{
   position:absolute; z-index:5; display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:16px;
@@ -560,8 +577,10 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
 
         <div class="hero-layer layer-media">
           <div class="hero-media" id="hero-media">
+            <video class="hero-video" id="hero-video" muted loop playsinline preload="none" aria-hidden="true"></video>
+            <div class="horizon-glow" aria-hidden="true"></div>
             <canvas id="city" aria-hidden="true"></canvas>
-            <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata" aria-hidden="true"></video>
+            <div class="grade" aria-hidden="true"></div>
           </div>
         </div>
 
@@ -868,9 +887,15 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
    и вся страница подхватит их автоматически.
    ========================================================= */
 const MEDIA = {
-  heroVideo:     'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_201226_34fc0ee3-1dfc-4f44-a9da-cdde16e341fa.mp4',  /* полёт с неба над городом, 1080p */
-  heroPoster:    'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_c4ef8c3f-0ebb-4254-bd55-f8dc0e3ca7f0.png',
-  dispatchVideo: 'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_201226_d92fc57c-4f04-4c3e-95ea-3d167f82c0db.mp4',  /* мусоровоз по маршруту, 1080p */
+  /* Файлы лежат рядом с index.html в папке media/ — залейте её в тот же репозиторий.
+     Большой файл для десктопа, 720p для узких экранов и медленной сети, постер — для мобильных. */
+  hero:     { mp4:'media/hero-city.mp4',     webm:'media/hero-city.webm',
+              mp4Sm:'media/hero-city-720.mp4', webmSm:'media/hero-city-720.webm',
+              poster:'media/hero-city.jpg' },
+  dispatch: { mp4:'media/dispatch-map.mp4',     webm:'media/dispatch-map.webm',
+              mp4Sm:'media/dispatch-map-720.mp4', webmSm:'media/dispatch-map-720.webm',
+              poster:'media/dispatch-map.jpg' },
+  /* фото ДО/ПОСЛЕ пока лежат на CDN Higgsfield — скачайте и положите в media/ тоже */
   photoBefore:   'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_1de1c13e-9254-4a5e-9a1f-a56a7c94d2bd.png',
   photoAfter:    'https://d8j0ntlcm91z4.cloudfront.net/user_3JEI9x6Y6fplPazP65Hafrf8GhH/hf_20260912_182124_9e5e4a89-a6ce-4312-be73-bce38daa1c27.png',
 };
@@ -918,31 +943,65 @@ const Ticker = (() => {
   };
 })();
 
-/* ---------------- подключение медиа ---------------- */
-function attachMedia(){
-  const set = (el, src, poster) => {
-    if(!el || !src || src.startsWith('__')) return false;
-    if(poster) el.poster = poster;
-    el.src = src;
-    el.addEventListener('error', () => el.style.display = 'none', { once:true });
-    const play = () => el.play().catch(() => {});
-    el.addEventListener('loadeddata', play, { once:true });
-    if(!reduceMotion) play();
-    return true;
-  };
-  /* на телефонах видео не грузим вовсе: экономим трафик и декодер,
-     фон рисует canvas-сцена — так скролл остаётся плавным */
-  if(!isMobileView){
-    set($('#hero-video'), MEDIA.heroVideo, MEDIA.heroPoster);
-    set($('#disp-video'), MEDIA.dispatchVideo);
-  }else{
-    const hv = $('#hero-video'), dv = $('#disp-video');
-    if(hv) hv.style.display = 'none';
-    if(dv) dv.style.display = 'none';
+/* ---------------- подключение медиа ----------------
+   · видео стартует, только когда блок попал в экран, и встаёт на паузу, когда ушёл;
+   · на узких экранах и при экономии трафика берём 720p;
+   · на телефонах видео не грузим совсем — показываем постер, движение рисует canvas. */
+function pickQuality(big, small){
+  const c = navigator.connection || {};
+  const slow = c.saveData || /(^|-)2g$/.test(c.effectiveType || '');
+  return (window.innerWidth < 1200 || slow) ? small : big;
+}
+function mountVideo(el, m, layer){
+  if(!el || !m) return;
+  if(m.poster){
+    el.setAttribute('poster', m.poster);
+    if(layer){
+      layer.style.backgroundImage = 'url(' + m.poster + ')';
+      layer.style.backgroundSize = 'cover';
+      layer.style.backgroundPosition = 'center';
+    }
   }
+  if(isMobileView || reduceMotion){ el.style.display = 'none'; return; }
+
+  const small = pickQuality(false, true);
+  const webm = small ? m.webmSm : m.webm;      /* VP9 — легче и современнее */
+  const mp4  = small ? m.mp4Sm  : m.mp4;       /* H.264 — понимают все */
+  el.preload = 'none';
+  let started = false, inView = false;
+  const play = () => el.play().catch(() => {});
+  const addSources = () => {
+    [[webm, 'video/webm'], [mp4, 'video/mp4']].forEach(([src, type]) => {
+      if(!src) return;
+      const sc = document.createElement('source');
+      sc.src = src; sc.type = type;
+      el.appendChild(sc);
+    });
+    el.load();
+  };
+  const io = new IntersectionObserver(es => {
+    inView = es[0].isIntersecting;
+    if(inView){
+      if(!started){ started = true; addSources(); }
+      play();
+    }else if(started) el.pause();
+  }, { rootMargin:'260px' });
+  io.observe(el);
+  el.addEventListener('error', () => { el.style.display = 'none'; }, { once:true });
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) el.pause();
+    else if(started && inView) play();
+  });
+}
+function attachMedia(){
+  mountVideo($('#hero-video'), MEDIA.hero, $('#hero-media'));
+  mountVideo($('#disp-video'), MEDIA.dispatch, $('#disp-frame'));
+
+  if(isMobileView || reduceMotion){ const road = $('#road'); if(road) road.style.display = 'none'; }
 
   const b = $('#img-before'), a = $('#img-after'), ph = $('#cmp-ph');
   if(MEDIA.photoBefore && !MEDIA.photoBefore.startsWith('__')){
+    b.loading = 'lazy'; a.loading = 'lazy'; b.decoding = 'async'; a.decoding = 'async';
     b.src = MEDIA.photoBefore; a.src = MEDIA.photoAfter || MEDIA.photoBefore;
     ph.style.display = 'none';
   }
@@ -1065,7 +1124,9 @@ registerScene(heroEl, p => {
   const fade = clamp(p / .38);
   copy.style.setProperty('--copy-o', (1 - fade).toFixed(3));
   copy.style.setProperty('--copy-b', (9 * fade).toFixed(1) + 'px');
-  media.style.setProperty('--video-o', (.52 - .34 * clamp((p - .3) / .5)).toFixed(2));
+  const vo = .92 - .82 * clamp((p - .18) / .5);      /* съёмка города → живая карта */
+  media.style.setProperty('--video-o', vo.toFixed(3));
+  skyCity.videoMix = vo;
   cue.style.opacity = String(1 - clamp(p / .12));
 
   /* панель выходит из глубины той же сцены */
@@ -1085,7 +1146,7 @@ registerScene(heroEl, p => {
 const skyCity = (() => {
   const cv = $('#city'), ctx = cv.getContext('2d');
   let w = 0, h = 0, dpr = 1;
-  const api = { p: 0 };
+  const api = { p: 0, videoMix: 0 };   /* videoMix: насколько сейчас видно съёмку города */
 
   const SPAN = 9000, MINOR = 420, MAJOR = 1680;       /* метры */
   /* маршруты проложены по сетке улиц: только повороты на 90° */
@@ -1197,6 +1258,7 @@ const skyCity = (() => {
     }
   }
   function drawRouteSet(scale, alpha, low, t){
+    const vmix = clamp(api.videoMix);
     const TILE_S = TILE * scale;
     const cx = camDist * Math.sin(heading), cy = camDist * Math.cos(heading);
     const reach = Math.max(1, Math.ceil(alt * 2.6 / TILE_S));
@@ -1209,9 +1271,9 @@ const skyCity = (() => {
           if(pts.some(q => !q)) return;
           if(pts.every(q => q.X < -240 || q.X > w + 240 || q.Y < horizon - 80 || q.Y > h + 240)) return;
           ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-          ctx.strokeStyle = 'rgba(' + r.c + ',' + ((r.main ? .6 : .4) * alpha).toFixed(3) + ')';
+          ctx.strokeStyle = 'rgba(' + r.c + ',' + ((r.main ? .6 : .4) * alpha * (1 - .4 * vmix)).toFixed(3) + ')';
           ctx.lineWidth = (r.main ? 5.5 : 4) * (0.85 + 1.1 * low);
-          ctx.shadowColor = 'rgba(' + r.c + ',' + (.95 * alpha).toFixed(2) + ')'; ctx.shadowBlur = 16 + 14 * low;
+          ctx.shadowColor = 'rgba(' + r.c + ',' + (.95 * alpha * (1 - .3 * vmix)).toFixed(2) + ')'; ctx.shadowBlur = 16 + 14 * low;
           ctx.beginPath(); pts.forEach((q, k) => k ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y)); ctx.stroke();
           ctx.shadowBlur = 0;
           ctx.strokeStyle = 'rgba(' + r.c + ',' + (.95 * alpha).toFixed(3) + ')';
@@ -1241,14 +1303,19 @@ const skyCity = (() => {
     const lv = lodLevels();
     const range = Math.max(alt * 3.4, 4200);
 
-    /* фон и небо */
-    ctx.fillStyle = '#04050a'; ctx.fillRect(0, 0, w, h);
+    /* пока под нами настоящая съёмка города — canvas прозрачный и рисует только неон */
+    const vm = clamp(api.videoMix);
+    const worldA = 1 - .85 * vm;            /* сетка, огни и кварталы уступают видео */
+    ctx.clearRect(0, 0, w, h);
+    if(vm < .98){
+    ctx.fillStyle = 'rgba(4,5,10,' + (1 - vm).toFixed(3) + ')'; ctx.fillRect(0, 0, w, h);
     if(horizon > 20){
       const sky = ctx.createLinearGradient(0, 0, 0, horizon + 40);
       sky.addColorStop(0, '#04050a');
       sky.addColorStop(.7, '#070a16');
       sky.addColorStop(1, 'rgba(95,75,200,' + (.14 + .18 * low).toFixed(3) + ')');
       ctx.fillStyle = sky; ctx.fillRect(0, 0, w, horizon + 40);
+    }
     }
     if(high > .02 && horizon > 60){
       for(const st of STARS){
@@ -1260,12 +1327,14 @@ const skyCity = (() => {
     }
 
     /* земля */
-    ctx.fillStyle = 'rgba(9,12,22,.75)';
-    ctx.fillRect(0, Math.max(0, horizon), w, h - Math.max(0, horizon));
+    if(vm < .98){
+      ctx.fillStyle = 'rgba(9,12,22,' + (.75 * (1 - vm)).toFixed(3) + ')';
+      ctx.fillRect(0, Math.max(0, horizon), w, h - Math.max(0, horizon));
+    }
 
     /* сетка улиц: два уровня детализации с плавным переходом */
-    lv.forEach(l => drawGrid(MINOR * l.s, 'rgba(150,165,220,' + (.13 * l.a).toFixed(3) + ')', 1, range));
-    drawGrid(MAJOR * lv[1].s, 'rgba(185,200,255,' + (.24 + .1 * low).toFixed(3) + ')', Math.max(1.3, 2 + 2 * low), range);
+    lv.forEach(l => drawGrid(MINOR * l.s, 'rgba(150,165,220,' + (.13 * l.a * worldA).toFixed(3) + ')', 1, range));
+    drawGrid(MAJOR * lv[1].s, 'rgba(185,200,255,' + ((.24 + .1 * low) * worldA).toFixed(3) + ')', Math.max(1.3, 2 + 2 * low), range);
 
     /* огни города */
     ctx.globalCompositeOperation = 'lighter';
@@ -1278,7 +1347,7 @@ const skyCity = (() => {
         if(!q || q.X < -30 || q.X > w + 30 || q.Y < Math.max(0, horizon) - 6 || q.Y > h + 10) continue;
         const fade = clamp(1 - q.d / (alt * 24));
         const rad = Math.max(1.3, Math.min(4, 1800 / q.d * (1 + low)));
-        ctx.fillStyle = 'rgba(' + lt.c + ',' + (lt.i * fade * l.a * .95).toFixed(3) + ')';
+        ctx.fillStyle = 'rgba(' + lt.c + ',' + (lt.i * fade * l.a * .95 * worldA).toFixed(3) + ')';
         ctx.beginPath(); ctx.arc(q.X, q.Y, rad, 0, 6.283); ctx.fill();
       }
     });
@@ -1300,9 +1369,9 @@ const skyCity = (() => {
         if(hpx < .5) continue;
         const fade = clamp(1 - g.d / (alt * 20));
         const bw = Math.max(1, b.w * f / g.d);
-        ctx.fillStyle = 'rgba(120,140,235,' + (.14 * fade * low).toFixed(3) + ')';
+        ctx.fillStyle = 'rgba(120,140,235,' + (.14 * fade * low * worldA).toFixed(3) + ')';
         ctx.fillRect(g.X - bw / 2, g.Y - hpx, bw, hpx);
-        ctx.fillStyle = 'rgba(190,205,255,' + (.55 * fade * low).toFixed(3) + ')';
+        ctx.fillStyle = 'rgba(190,205,255,' + (.55 * fade * low * worldA).toFixed(3) + ')';
         ctx.fillRect(g.X - bw / 2, g.Y - hpx - 1, bw, 1.2);
       }
     }
@@ -1330,7 +1399,7 @@ const skyCity = (() => {
     }
 
     /* облака: пролетаем сквозь них, пока высоко */
-    if(high > .01){
+    if(high > .01 && vm < .5){
       for(const cl of CLOUDS){
         const grow = 1 + (1 - high) * 2.6;
         const cx2 = cl.x * w, cy2 = (cl.y + (1 - high) * cl.sp) * h;
@@ -1345,7 +1414,7 @@ const skyCity = (() => {
     }
 
     /* дымка у горизонта */
-    if(horizon > -60){
+    if(horizon > -60 && vm < .9){
       const haze = ctx.createLinearGradient(0, horizon - 40, 0, horizon + 120);
       haze.addColorStop(0, 'rgba(139,92,246,0)');
       haze.addColorStop(.4, 'rgba(110,90,220,' + (.14 + .12 * low).toFixed(3) + ')');
