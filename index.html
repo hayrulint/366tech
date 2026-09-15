@@ -253,17 +253,29 @@ main{position:relative; z-index:2}
 .leaflet-control-attribution{background:rgba(5,7,12,.6) !important; color:#4a5068 !important; font-size:9.5px !important; border-radius:6px 0 0 0}
 .leaflet-control-attribution a{color:#6b7186 !important}
 .leaflet-control-zoom a{background:#11131c !important; color:#eef0f6 !important; border-color:var(--hair) !important}
-.route-glow{filter:drop-shadow(0 0 6px rgba(139,92,246,.75))}
-.veh-pin{position:relative; display:block; width:14px; height:14px; border-radius:50%; border:2px solid rgba(5,7,12,.9); box-shadow:0 0 12px currentColor; background:currentColor}
-.veh-pin b{position:absolute; inset:-5px; border-radius:50%; border:1.5px solid currentColor; animation:pinPulse 2.2s ease-out infinite}
-@keyframes pinPulse{0%{transform:scale(.6); opacity:.85} 100%{transform:scale(2.1); opacity:0}}
-@media (prefers-reduced-motion:reduce){ .veh-pin b{animation:none; opacity:.25} }
-.truck-wrap{width:46px; height:46px; display:grid; place-items:center; pointer-events:none}
-.truck{
-  width:44px; height:24px; display:block; transform-origin:50% 50%; will-change:transform;
-  filter:drop-shadow(0 0 8px rgba(47,224,172,.75));
+.map-pin{position:relative; display:block; width:34px; height:44px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+.map-pin .pin-body{position:absolute; inset:0; width:34px; height:44px; fill:var(--pin); stroke:rgba(5,7,12,.85); stroke-width:1.6}
+.map-pin .pin-ic{
+  position:absolute; left:50%; top:7px; width:19px; height:19px; transform:translateX(-50%);
+  fill:none; stroke:#0b0f16; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;
 }
-.truck .body{fill:#eef6f3} .truck .cab{fill:#2fe0ac} .truck .wheel{fill:#0b0f14} .truck .line{stroke:#0b0f14; stroke-width:1.2; fill:none}
+.map-pin .pin-ring{
+  position:absolute; left:50%; bottom:-6px; width:26px; height:26px; margin-left:-13px; border-radius:50%;
+  border:1.6px solid var(--pin); opacity:.6; animation:pinPulse 2.4s ease-out infinite;
+}
+@keyframes pinPulse{0%{transform:scale(.45); opacity:.75} 100%{transform:scale(1.9); opacity:0}}
+@media (prefers-reduced-motion:reduce){ .map-pin .pin-ring{animation:none; opacity:.3} }
+.map-pin{cursor:pointer; transition:transform .25s var(--ease-out)}
+.map-pin:hover{transform:translateY(-3px)}
+/* карточка статуса объекта */
+.leaflet-popup-content-wrapper{background:rgba(10,12,20,.94); color:#eef0f6; border:1px solid rgba(255,255,255,.12); border-radius:14px; box-shadow:0 18px 44px rgba(0,0,0,.6); backdrop-filter:blur(14px)}
+.leaflet-popup-content{margin:11px 14px; font-family:'Inter',sans-serif; line-height:1.45}
+.leaflet-popup-tip{background:rgba(10,12,20,.94)}
+.leaflet-popup-close-button{color:#8b90a6 !important}
+.map-pop .st{display:flex; align-items:center; gap:7px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--pop,#8B5CF6)}
+.map-pop .st i{width:7px; height:7px; border-radius:50%; background:var(--pop,#8B5CF6); display:block}
+.map-pop .ti{font-size:13.5px; color:#fff; font-weight:500; margin-top:5px}
+.map-pop .me{font-size:11.5px; color:var(--mute); margin-top:3px}
 .d-side{border-left:1px solid var(--hair-2); padding:12px; display:flex; flex-direction:column; gap:6px; overflow:hidden; background:rgba(5,6,8,.4)}
 .d-row{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:12px; transition:background .2s ease}
 .d-row:hover{background:rgba(255,255,255,.05)}
@@ -291,19 +303,23 @@ main{position:relative; z-index:2}
 #dispatching .scene__stage{display:block}
 .disp-grid{
   position:absolute; inset:0; display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
-  gap:clamp(24px,4vw,64px); align-items:center; max-width:1240px; margin:0 auto; padding:96px 24px 64px;
+  gap:clamp(24px,4vw,64px); align-items:center; max-width:1240px; margin:0 auto;
+  padding:clamp(64px,9svh,96px) 24px clamp(40px,6svh,60px);
 }
 .disp-grid > *{min-width:0}
-.disp-steps{display:flex; flex-direction:column; gap:14px; min-width:0; max-width:100%}
+.disp-steps{display:flex; flex-direction:column; gap:10px; min-width:0; max-width:100%}
 .step{
-  padding:18px 20px; border-radius:var(--r-m); border:1px solid transparent; transition:all .55s var(--ease-out);
-  opacity:.34; transform:translateX(-8px);
+  padding:14px 18px; border-radius:var(--r-m); border:1px solid transparent; transition:all .55s var(--ease-out);
+  opacity:.38; transform:translateX(-8px);
 }
 .step.on{opacity:1; transform:none; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border-color:var(--hair); box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
-.step .n{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:9px; font-size:12px; font-weight:600; font-family:'Space Grotesk',sans-serif; color:#050608; background:var(--violet-soft); margin-bottom:12px}
+.step .n{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:9px; font-size:12px; font-weight:600; font-family:'Space Grotesk',sans-serif; color:#050608; background:var(--violet-soft); margin-bottom:9px}
 .step.on .n{background:linear-gradient(135deg,var(--violet),var(--mint))}
 .step h3{font-size:19px; letter-spacing:-.02em}
-.step p{font-size:14.5px; color:var(--dim); margin-top:7px; line-height:1.6}
+.step p{font-size:14.5px; color:var(--dim); margin-top:0; line-height:1.6; max-height:0; opacity:0; overflow:hidden;
+  transition:max-height .5s var(--ease-out), opacity .4s var(--ease-out), margin-top .5s var(--ease-out)}
+.step.on p{max-height:150px; opacity:1; margin-top:7px}
+@media (prefers-reduced-motion:reduce){ .step p{transition:none} }
 .stage-frame{position:relative; border-radius:var(--r-xl); overflow:hidden; aspect-ratio:16/10; max-height:72svh}
 .stage-frame video, .stage-frame canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 .stage-frame video{transform:scale(1.06); animation:kenburns 26s ease-in-out infinite alternate; will-change:transform}
@@ -647,8 +663,8 @@ footer{border-top:1px solid var(--hair-2); padding:56px 0 40px; position:relativ
       <div class="disp-grid">
         <div>
           <span class="eyebrow">Как это работает</span>
-          <h2 class="h2" style="margin-top:18px">Два источника<br>координат.<br><span class="grad">Один экран.</span></h2>
-          <div class="disp-steps" style="margin-top:30px">
+          <h2 class="h2" style="margin-top:14px">Два источника<br>координат.<br><span class="grad">Один экран.</span></h2>
+          <div class="disp-steps" style="margin-top:24px">
             <article class="step on" data-step="0">
               <span class="n">01</span>
               <h3>GPS-трекер на транспорте</h3>
@@ -1181,62 +1197,38 @@ const ROUTE = [
   [43.2400, 76.8850], [43.2400, 76.9180],
 ];
 const STOPS = [
-  { at:[43.2400, 76.9550], c:'#2fe0ac' },
-  { at:[43.2555, 76.9180], c:'#f6ab3f' },
-  { at:[43.2400, 76.8850], c:'#ff5c7a' },
-  { at:[43.2478, 76.9550], c:'#4c9bff' },
+  { at:[43.2400, 76.9550], c:'#8B5CF6', icon:'truck', st:'В движении',        ti:'702 AB 02 · Арман К.',  me:'GPS-трекер · 46 км/ч · задание №1612' },
+  { at:[43.2555, 76.9180], c:'#2fe0ac', icon:'truck', st:'На точке',          ti:'204 EA 02 · Асель Н.',  me:'Фото ДО и ПОСЛЕ загружены · 4 мин назад' },
+  { at:[43.2400, 76.8850], c:'#f6ab3f', icon:'box',   st:'Длительная стоянка',ti:'ул. Ауэзова, 106',      me:'Стоянка 28 минут · задание №1548' },
+  { at:[43.2478, 76.9550], c:'#4c9bff', icon:'box',   st:'Выполнено',         ti:'Смартфон · Ержан Т.',   me:'9 точек · 12,4 км · трек сохранён' },
 ];
+function popHTML(st){
+  return '<div class="map-pop" style="--pop:' + st.c + '">' +
+    '<div class="st"><i></i>' + st.st + '</div>' +
+    '<div class="ti">' + st.ti + '</div>' +
+    '<div class="me">' + st.me + '</div>' +
+  '</div>';
+}
+
+/* пин-капля с иконкой техники внутри */
+const PIN_ICONS = {
+  truck:'<path d="M3 15V7.5h10V15"/><path d="M13 10h3.4l3.6 3.4V15h-2"/><path d="M8.6 15h4"/><circle cx="6.4" cy="16" r="1.9"/><circle cx="16.4" cy="16" r="1.9"/>',
+  box:'<path d="M20.5 8 12 3.6 3.5 8l8.5 4.4z"/><path d="M3.5 8v7.9l8.5 4.5 8.5-4.5V8"/><path d="M12 12.4v8"/>',
+};
+function pinHTML(color, kind){
+  return '<span class="map-pin" style="--pin:' + color + '">' +
+    '<i class="pin-ring"></i>' +
+    '<svg class="pin-body" viewBox="0 0 34 44" aria-hidden="true">' +
+      '<path d="M17 1.6c8.5 0 15.4 6.9 15.4 15.4 0 10.6-12.6 23.2-14.4 25-.6.6-1.5.6-2.1 0C14.2 40.2 1.6 27.6 1.6 17 1.6 8.5 8.5 1.6 17 1.6z"/>' +
+    '</svg>' +
+    '<svg class="pin-ic" viewBox="0 0 24 24" aria-hidden="true">' + (PIN_ICONS[kind] || PIN_ICONS.truck) + '</svg>' +
+  '</span>';
+}
 /* улицы для canvas-версии карты (широты и долготы реальных магистралей) */
 const STREETS = {
   lat:[43.2400, 43.2478, 43.2555, 43.2640, 43.2320],
   lng:[76.8850, 76.9180, 76.9390, 76.9550, 76.9010, 76.9700],
 };
-
-const KLNG = Math.cos(43.25 * Math.PI / 180);
-const PATH = (() => {
-  const segs = []; let total = 0;
-  for(let i = 0; i < ROUTE.length - 1; i++){
-    const a = ROUTE[i], b = ROUTE[i + 1];
-    const dx = (b[1] - a[1]) * KLNG, dy = b[0] - a[0];
-    const len = Math.hypot(dx, dy);
-    segs.push({ a, b, len, start: total, ang: Math.atan2(-dy, dx) * 180 / Math.PI });
-    total += len;
-  }
-  return { segs, total };
-})();
-function pointAt(dist){
-  let d = dist % PATH.total; if(d < 0) d += PATH.total;
-  for(const sg of PATH.segs){
-    if(d <= sg.start + sg.len){
-      const k = sg.len ? (d - sg.start) / sg.len : 0;
-      return { lat: lerp(sg.a[0], sg.b[0], k), lng: lerp(sg.a[1], sg.b[1], k), ang: sg.ang };
-    }
-  }
-  const last = PATH.segs[PATH.segs.length - 1];
-  return { lat:last.b[0], lng:last.b[1], ang:last.ang };
-}
-const shortAngle = (from, to) => from + (((to - from + 540) % 360) - 180);
-
-const TRUCK_SVG = '<span class="truck-wrap"><svg class="truck" viewBox="0 0 48 26" xmlns="http://www.w3.org/2000/svg">' +
-  '<rect class="body" x="4" y="4.5" width="15" height="4" rx="1.6"/>' +
-  '<rect class="body" x="3" y="8" width="22" height="10.5" rx="2.4"/>' +
-  '<path class="cab" d="M25 10.5h7.6l5.4 5.1v2.9H25z"/>' +
-  '<rect class="cab" x="6" y="10.5" width="16" height="5.5" rx="1.4" opacity=".35"/>' +
-  '<circle class="wheel" cx="11" cy="20.4" r="3.5"/><circle class="wheel" cx="33" cy="20.4" r="3.5"/>' +
-  '<circle class="cab" cx="11" cy="20.4" r="1.5"/><circle class="cab" cx="33" cy="20.4" r="1.5"/>' +
-  '</svg></span>';
-const VAN_SVG = '<span class="truck-wrap"><svg class="truck" viewBox="0 0 48 26" xmlns="http://www.w3.org/2000/svg" style="width:36px">' +
-  '<path class="body" d="M4 9h20l6 3.4V18H4z" />' +
-  '<path class="cab" d="M24 9h2.6l5.4 3.6V18H24z" opacity=".9"/>' +
-  '<circle class="wheel" cx="11" cy="19.4" r="3.2"/><circle class="wheel" cx="27" cy="19.4" r="3.2"/>' +
-  '<circle class="cab" cx="11" cy="19.4" r="1.3"/><circle class="cab" cx="27" cy="19.4" r="1.3"/>' +
-  '</svg></span>';
-
-/* кто едет: мусоровоз и курьерский фургон, разные скорости и фазы */
-const MOVERS = [
-  { kind:'truck', loop:74, off:0 },
-  { kind:'van',   loop:96, off:PATH.total * .46 },
-];
 
 function createFleetMap(host, opts){
   if(!host) return null;
@@ -1257,30 +1249,15 @@ function leafletFleetMap(host, opts){
   }).addTo(map);
 
   /* линию маршрута не рисуем — на карте живут только точки объектов */
-  STOPS.forEach(st => L.marker(st.at, {
-    interactive:false, keyboard:false,
-    icon: L.divIcon({ className:'', html:'<i class="veh-pin" style="color:' + st.c + '"><b></b></i>', iconSize:[14,14], iconAnchor:[7,7] }),
-  }).addTo(map));
-
-  const cars = MOVERS.map(m => {
-    const p0 = pointAt(m.off);
-    const mk = L.marker([p0.lat, p0.lng], {
-      interactive:false, keyboard:false,
-      icon: L.divIcon({ className:'', html: m.kind === 'truck' ? TRUCK_SVG : VAN_SVG, iconSize:[46,46], iconAnchor:[23,23] }),
+  STOPS.forEach(st => {
+    const mk = L.marker(st.at, {
+      interactive:true, keyboard:false, riseOnHover:true,
+      icon: L.divIcon({ className:'', html: pinHTML(st.c, st.icon), iconSize:[34,44], iconAnchor:[17,42] }),
     }).addTo(map);
-    return { m, mk, el:null, d:m.off, ang:p0.ang };
+    if(mk.bindPopup) mk.bindPopup(popHTML(st), { closeButton:true, offset:[0,-34], maxWidth:240, autoPan:false });
   });
 
-  Ticker.add((t, dt) => {
-    for(const c of cars){
-      c.d += (PATH.total / (c.m.loop * 1000)) * dt;
-      const pt = pointAt(c.d);
-      c.mk.setLatLng([pt.lat, pt.lng]);
-      c.ang = lerp(c.ang, shortAngle(c.ang, pt.ang), .16);
-      if(!c.el){ const root = c.mk.getElement(); c.el = root && root.querySelector('.truck'); }
-      if(c.el) c.el.style.transform = 'rotate(' + c.ang.toFixed(1) + 'deg)';
-    }
-  }, host);
+  /* едущая техника убрана — на карте только статичные пины объектов */
 
   /* показываем весь маршрут целиком, как в навигаторе */
   const fit = () => {
@@ -1314,27 +1291,39 @@ function canvasFleetMap(host, opts){
     cv.style.width = '100%'; cv.style.height = '100%';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  const cars = MOVERS.map(m => { const p0 = pointAt(m.off); return { m, d:m.off, ang:p0.ang }; });
-
-  function drawTruck(x, y, ang, scale, main){
+  /* пин-капля с иконкой: тот же вид, что и на настоящей карте */
+  function drawPin(x, y, color, kind, k, ph){
     ctx.save();
-    ctx.translate(x, y); ctx.rotate(ang * Math.PI / 180); ctx.scale(scale, scale);
-    ctx.shadowColor = 'rgba(47,224,172,.8)'; ctx.shadowBlur = 12;
-    const rr = (x0, y0, w0, h0, r0) => {
-      if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, r0); ctx.fill(); }
-      else { ctx.fillRect(x0, y0, w0, h0); }
-    };
-    ctx.fillStyle = '#eef6f3';
-    rr(-11, -5, 15, 10, 2.4);
-    if(main) rr(-9, -8, 11, 3.2, 1.4);
-    ctx.fillStyle = '#2fe0ac';
-    ctx.beginPath(); ctx.moveTo(4, -3.5); ctx.lineTo(11, -3.5); ctx.lineTo(14, 1.4); ctx.lineTo(14, 5); ctx.lineTo(4, 5); ctx.closePath(); ctx.fill();
-    ctx.shadowBlur = 0; ctx.fillStyle = '#0b0f14';
-    ctx.beginPath(); ctx.arc(-6, 6, 3, 0, 6.283); ctx.fill();
-    ctx.beginPath(); ctx.arc(9, 6, 3, 0, 6.283); ctx.fill();
-    ctx.fillStyle = '#2fe0ac';
-    ctx.beginPath(); ctx.arc(-6, 6, 1.2, 0, 6.283); ctx.fill();
-    ctx.beginPath(); ctx.arc(9, 6, 1.2, 0, 6.283); ctx.fill();
+    ctx.translate(x, y); ctx.scale(k, k);
+
+    /* пульсирующее кольцо у основания */
+    ctx.strokeStyle = color; ctx.globalAlpha = (1 - ph) * .55; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.ellipse(0, 0, 6 + ph * 16, 3 + ph * 8, 0, 0, 6.283); ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    /* капля */
+    ctx.beginPath();
+    ctx.arc(0, -17, 10.5, Math.PI * .78, Math.PI * .22);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 12; ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 1.4; ctx.strokeStyle = 'rgba(5,7,12,.85)'; ctx.stroke();
+
+    /* иконка внутри */
+    ctx.strokeStyle = '#0b0f16'; ctx.lineWidth = 1.35; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.translate(0, -17); ctx.scale(1.12, 1.12);
+    if(kind === 'box'){
+      ctx.beginPath();
+      ctx.moveTo(-5, -2.4); ctx.lineTo(0, -5); ctx.lineTo(5, -2.4); ctx.lineTo(0, .2); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-5, -2.4); ctx.lineTo(-5, 2.6); ctx.lineTo(0, 5.2); ctx.lineTo(5, 2.6); ctx.lineTo(5, -2.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, .2); ctx.lineTo(0, 5.2); ctx.stroke();
+    }else{
+      ctx.beginPath(); ctx.moveTo(-6, 2.4); ctx.lineTo(-6, -3); ctx.lineTo(1, -3); ctx.lineTo(1, 2.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(1, -1); ctx.lineTo(3.6, -1); ctx.lineTo(6, 1.2); ctx.lineTo(6, 2.4); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-3.6, 3.2, 1.5, 0, 6.283); ctx.stroke();
+      ctx.beginPath(); ctx.arc(3.6, 3.2, 1.5, 0, 6.283); ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -1355,25 +1344,11 @@ function canvasFleetMap(host, opts){
     STREETS.lat.forEach(lat => { ctx.beginPath(); ctx.moveTo(0, Y(lat)); ctx.lineTo(w, Y(lat)); ctx.stroke(); });
     STREETS.lng.forEach(lng => { ctx.beginPath(); ctx.moveTo(X(lng), 0); ctx.lineTo(X(lng), h); ctx.stroke(); });
 
-    /* точки объектов: живые, с пульсирующим кольцом (линию маршрута не рисуем) */
+    /* пины объектов */
     STOPS.forEach((st, i) => {
-      const cx = X(st.at[1]), cy = Y(st.at[0]);
-      const ph = ((t / 1600) + i * .28) % 1;
-      ctx.strokeStyle = st.c; ctx.globalAlpha = (1 - ph) * .5; ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.arc(cx, cy, 5 + ph * 15, 0, 6.283); ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = st.c; ctx.shadowColor = st.c; ctx.shadowBlur = 14;
-      ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 6.283); ctx.fill();
-      ctx.shadowBlur = 0;
+      const ph = ((t / 1900) + i * .26) % 1;
+      drawPin(X(st.at[1]), Y(st.at[0]), st.c, st.icon, opts.big ? 1.35 : 1.12, ph);
     });
-
-    /* техника */
-    for(const c of cars){
-      c.d += (PATH.total / (c.m.loop * 1000)) * dt;
-      const pt = pointAt(c.d);
-      c.ang = lerp(c.ang, shortAngle(c.ang, pt.ang), .16);
-      drawTruck(X(pt.lng), Y(pt.lat), c.ang, c.m.kind === 'truck' ? (opts.big ? 1.15 : .9) : (opts.big ? .95 : .75), c.m.kind === 'truck');
-    }
   }
   window.addEventListener('resize', size, { passive:true });
   size(); Ticker.add(frame, host);
